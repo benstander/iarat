@@ -41,7 +41,7 @@ Style: ${brainrotStyle}`;
       model: openai('gpt-3.5-turbo'),
       prompt: prompt,
       maxTokens: 1000,
-      temperature: 0.7, // Add some creativity
+      temperature: 0.7, 
     });
 
     return new Response(JSON.stringify({ script: text }), {
