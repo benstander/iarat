@@ -1,4 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## IARAT - AI Brainrot Video Generator
+
+This is a [Next.js](https://nextjs.org) project that generates brainrot-style video scripts from various content sources using AI.
+
+## Features
+
+- **PDF Upload & Processing**: Upload lecture notes or documents in PDF format - text extraction and script conversion happens entirely in the backend
+- **YouTube Transcription**: Extract transcripts from YouTube videos and convert to engaging scripts
+- **Manual Text Input**: Direct text input for custom content conversion
+- **AI Script Generation**: Convert content to engaging video scripts using OpenAI via Vercel AI SDK
+- **Backend-Only Text Processing**: PDF text never appears in frontend - only final video scripts are shown
+
+## Architecture
+
+- **Frontend**: Next.js 15 with React 19, Tailwind CSS, and Shadcn/ui components
+- **Backend**: Next.js API Routes with the following endpoints:
+  - `/api/pdf-upload` - PDF processing, text extraction using pdf-parse, and direct script generation
+  - `/api/youtube-transcribe` - YouTube video transcription
+  - `/api/generate-video-script` - AI script generation using Vercel AI SDK + OpenAI (for YouTube/manual text)
+- **AI Integration**: Vercel AI SDK with OpenAI GPT-3.5-turbo for script generation
+
+## Dependencies
+
+Key packages:
+- `pdf-parse` - PDF text extraction
+- `@ai-sdk/openai` & `ai` - Vercel AI SDK for OpenAI integration  
+- `youtube-dl-exec` - YouTube video processing
+- `multer` - File upload handling
 
 ## Getting Started
 

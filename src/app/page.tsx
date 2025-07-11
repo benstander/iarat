@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Switch } from "@/components/ui/switch"
-import { Upload, FileText, Video, Link, Play, StickyNote } from "lucide-react"
+import { Upload, FileText, Video, Link, StickyNote } from "lucide-react"
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<'pdf' | 'youtube' | 'notes' | null>(null)
@@ -17,7 +17,7 @@ export default function Home() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [youtubeLink, setYoutubeLink] = useState("")
   const [parsedTextContent, setParsedTextContent] = useState("")
-  const [brainrotStyle, setBrainrotStyle] = useState("")
+
   const [backgroundVideo, setBackgroundVideo] = useState("")
   const [memeSfx, setMemeSfx] = useState(true)
   const [voiceover, setVoiceover] = useState(true)
@@ -47,9 +47,37 @@ export default function Home() {
       const file = e.dataTransfer.files[0]
       if (file.type === "application/pdf") {
         setUploadedFile(file)
-        // TODO: Process PDF and extract text (not using Vercel AI SDK)
-        // setParsedTextContent(extractedText)
       }
+    }
+  }
+
+  const processPDF = async (file: File) => {
+    setIsGenerating(true)
+    setGeneratedScript("")
+    
+    try {
+      const formData = new FormData()
+      formData.append('pdf', file)
+
+
+      const response = await fetch('/api/pdf-upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to process PDF')
+      }
+
+      const data = await response.json()
+      setGeneratedScript(data.script)
+      console.log(`Successfully generated script from PDF: ${data.fileName} (${data.pageCount} pages)`)
+    } catch (error) {
+      console.error('Error processing PDF:', error)
+      alert('Failed to process PDF. Please try again.')
+      setUploadedFile(null)
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -58,8 +86,6 @@ export default function Home() {
       const file = e.target.files[0]
       if (file.type === "application/pdf") {
         setUploadedFile(file)
-        // TODO: Process PDF and extract text (not using Vercel AI SDK)
-        // setParsedTextContent(extractedText)
       }
     }
   }
@@ -67,8 +93,11 @@ export default function Home() {
   const handleYoutubeLinkProcess = async () => {
     if (youtubeLink.trim()) {
       setIsGenerating(true)
+      setGeneratedScript("")
+      
       try {
-        const response = await fetch('/api/youtube-transcribe', {
+        // First transcribe the YouTube video
+        const transcribeResponse = await fetch('/api/youtube-transcribe', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -78,16 +107,34 @@ export default function Home() {
           }),
         })
 
-        if (!response.ok) {
+        if (!transcribeResponse.ok) {
           throw new Error('Failed to transcribe YouTube video')
         }
 
-        const data = await response.json()
-        setParsedTextContent(data.transcript)
+        const transcribeData = await transcribeResponse.json()
         console.log("Successfully transcribed YouTube video")
+
+        // Then generate script from transcript
+        const scriptResponse = await fetch('/api/generate-video-script', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            textContent: transcribeData.transcript,
+          }),
+        })
+
+        if (!scriptResponse.ok) {
+          throw new Error('Failed to generate script')
+        }
+
+        const scriptData = await scriptResponse.json()
+        setGeneratedScript(scriptData.script)
+        console.log("Successfully generated script from YouTube video")
       } catch (error) {
-        console.error('Error transcribing YouTube video:', error)
-        alert('Failed to transcribe YouTube video. Please check the URL and try again.')
+        console.error('Error processing YouTube video:', error)
+        alert('Failed to process YouTube video. Please check the URL and try again.')
       } finally {
         setIsGenerating(false)
       }
@@ -95,8 +142,8 @@ export default function Home() {
   }
 
   const handleGenerate = async () => {
-    if (!brainrotStyle || !parsedTextContent.trim()) {
-      alert("Please select a brainrot style and provide text content!")
+    if (!parsedTextContent.trim()) {
+      alert("Please provide text content!")
       return
     }
 
@@ -111,7 +158,6 @@ export default function Home() {
         },
         body: JSON.stringify({
           textContent: parsedTextContent,
-          brainrotStyle,
         }),
       })
 
@@ -230,30 +276,16 @@ export default function Home() {
                     <Label htmlFor="youtube-link" className="text-sm font-medium text-gray-700">
                       YouTube Link
                     </Label>
-                    <div className="flex gap-2">
-                      <div className="flex-1 relative">
-                        <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="youtube-link"
-                          type="url"
-                          placeholder="https://youtube.com/watch?v=..."
-                          value={youtubeLink}
-                          onChange={(e) => setYoutubeLink(e.target.value)}
-                          className="pl-10 rounded-[10px] bg-gray-100 border-gray-300 text-black placeholder:text-gray-400 focus:border-gray-500 focus:ring-gray-500"
-                        />
-                      </div>
-                      <Button
-                        onClick={handleYoutubeLinkProcess}
-                        disabled={!youtubeLink.trim() || isGenerating}
-                        variant="outline"
-                        className="rounded-[10px] border-gray-300 text-gray-700 hover:bg-gray-100"
-                      >
-                        {isGenerating ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
-                        ) : (
-                          <Play className="h-4 w-4" />
-                        )}
-                      </Button>
+                    <div className="relative">
+                      <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="youtube-link"
+                        type="url"
+                        placeholder="https://youtube.com/watch?v=..."
+                        value={youtubeLink}
+                        onChange={(e) => setYoutubeLink(e.target.value)}
+                        className="pl-10 rounded-[10px] bg-gray-100 border-gray-300 text-black placeholder:text-gray-400 focus:border-gray-500 focus:ring-gray-500"
+                      />
                     </div>
                   </div>
                 )}
@@ -261,14 +293,11 @@ export default function Home() {
                 {activeSection === 'notes' && (
                   <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                     <Label htmlFor="parsedTextContent" className="text-sm font-medium text-gray-700">
-                      Course Notes
-                      {parsedTextContent && (
-                        <span className="text-xs text-green-600 ml-2">(✓ Content loaded)</span>
-                      )}
+                      Manual Text Input
                     </Label>
                     <Textarea
                       id="parsedTextContent"
-                      placeholder="Text content will appear here after processing PDF/YouTube, or paste manually..."
+                      placeholder="Paste your course notes, lecture content, or any text you want to convert to brainrot..."
                       value={parsedTextContent}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setParsedTextContent(e.target.value)}
                       className="min-h-32 rounded-[10px] bg-gray-100 border-gray-300 text-black placeholder:text-gray-400 focus:border-gray-500 focus:ring-gray-500"
@@ -305,27 +334,29 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Generated Script Preview */}
-                {generatedScript && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Generated Script 
-                      <span className="text-xs text-green-600 ml-2">(✓ Generated via Vercel AI SDK + OpenAI)</span>
-                    </Label>
-                    <div className="bg-gray-100 rounded-[10px] p-4 max-h-40 overflow-y-auto">
-                      <pre className="text-sm text-gray-800 whitespace-pre-wrap">{generatedScript}</pre>
-                    </div>
-                  </div>
-                )}
+
               </div>
 
-              {/* Generate Button - Always at Bottom */}
+              {/* Generate Button - For all sections */}
               <div className="pt-4 border-t border-gray-200 mt-auto">
                 <Button
-                  onClick={handleGenerate}
+                  onClick={() => {
+                    if (activeSection === 'pdf' && uploadedFile) {
+                      processPDF(uploadedFile)
+                    } else if (activeSection === 'youtube' && youtubeLink.trim()) {
+                      handleYoutubeLinkProcess()
+                    } else if (activeSection === 'notes' && parsedTextContent.trim()) {
+                      handleGenerate()
+                    }
+                  }}
                   className="w-full h-14 rounded-[8px] font-semibold text-md"
                   variant="purple"
-                  disabled={!parsedTextContent.trim() || !brainrotStyle || isGenerating}
+                  disabled={
+                    isGenerating || 
+                    (activeSection === 'pdf' && !uploadedFile) ||
+                    (activeSection === 'youtube' && !youtubeLink.trim()) ||
+                    (activeSection === 'notes' && !parsedTextContent.trim())
+                  }
                 >
                   {isGenerating ? "Generating..." : "Generate Video"}
                 </Button>
@@ -333,32 +364,15 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Right Column - Script Preview or iPhone Video Preview */}
+          {/* Right Column - iPhone Video Preview */}
           <div className="flex items-center justify-center">
-            {generatedScript ? (
-              <Card className="w-full h-[600px] rounded-2xl shadow-2xl border border-gray-200 bg-white">
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold text-black flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Generated Script
-                    <span className="text-xs text-green-600 font-normal ml-2">(Vercel AI SDK + OpenAI)</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="h-[500px] overflow-y-auto">
-                  <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                    {generatedScript}
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="bg-gray-800 rounded-[2.5rem] p-4 w-80 h-[600px] shadow-2xl">
-                <div className="bg-black rounded-[2rem] w-full h-full flex items-center justify-center">
-                  <p className="text-gray-400 text-center">
-                    {isGenerating ? "Generating Script..." : "Video Preview\nComing Soon"}
-                  </p>
-                </div>
+            <div className="bg-gray-800 rounded-[2.5rem] p-4 w-80 h-[600px] shadow-2xl">
+              <div className="bg-black rounded-[2rem] w-full h-full flex items-center justify-center">
+                <p className="text-gray-400 text-center">
+                  {isGenerating ? "Generating Script..." : "Video Preview\nComing Soon"}
+                </p>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

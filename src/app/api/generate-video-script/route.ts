@@ -5,11 +5,11 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    const { textContent, brainrotStyle } = await req.json();
+    const { textContent, brainrotStyle = 'engaging and modern' } = await req.json();
 
-    if (!textContent || !brainrotStyle) {
+    if (!textContent) {
       return new Response(
-        JSON.stringify({ error: 'Text content and brainrot style are required' }), 
+        JSON.stringify({ error: 'Text content is required' }), 
         { 
           status: 400, 
           headers: { 'Content-Type': 'application/json' } 
