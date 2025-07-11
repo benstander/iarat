@@ -64,11 +64,33 @@ export default function Home() {
     }
   }
 
-  const handleYoutubeLinkProcess = () => {
+  const handleYoutubeLinkProcess = async () => {
     if (youtubeLink.trim()) {
-      // TODO: Process YouTube link and extract transcript (not using Vercel AI SDK)
-      // setParsedTextContent(extractedTranscript)
-      console.log("Processing YouTube link:", youtubeLink)
+      setIsGenerating(true)
+      try {
+        const response = await fetch('/api/youtube-transcribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            youtubeUrl: youtubeLink,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to transcribe YouTube video')
+        }
+
+        const data = await response.json()
+        setParsedTextContent(data.transcript)
+        console.log("Successfully transcribed YouTube video")
+      } catch (error) {
+        console.error('Error transcribing YouTube video:', error)
+        alert('Failed to transcribe YouTube video. Please check the URL and try again.')
+      } finally {
+        setIsGenerating(false)
+      }
     }
   }
 
@@ -222,11 +244,15 @@ export default function Home() {
                       </div>
                       <Button
                         onClick={handleYoutubeLinkProcess}
-                        disabled={!youtubeLink.trim()}
+                        disabled={!youtubeLink.trim() || isGenerating}
                         variant="outline"
                         className="rounded-[10px] border-gray-300 text-gray-700 hover:bg-gray-100"
                       >
-                        <Play className="h-4 w-4" />
+                        {isGenerating ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -235,8 +261,10 @@ export default function Home() {
                 {activeSection === 'notes' && (
                   <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                     <Label htmlFor="parsedTextContent" className="text-sm font-medium text-gray-700">
-                      Text Content
-                      <span className="text-xs text-gray-500 ml-2">(Auto-populated from PDF/YouTube or paste manually)</span>
+                      Course Notes
+                      {parsedTextContent && (
+                        <span className="text-xs text-green-600 ml-2">(✓ Content loaded)</span>
+                      )}
                     </Label>
                     <Textarea
                       id="parsedTextContent"
