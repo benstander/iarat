@@ -99,20 +99,23 @@ async function getActualAudioDuration(audioBuffer: Buffer): Promise<number> {
 }
 
 // Estimate audio duration based on text length (fallback method)
-// Average speech rate is approximately 150 words per minute
+// Optimized for 30-second videos with 75 words
 function estimateAudioDuration(textOrBufferSize: string | number): number {
   if (typeof textOrBufferSize === 'string') {
     const words = textOrBufferSize.trim().split(/\s+/).length;
-    const wordsPerMinute = 150; // Average speech rate
+    const wordsPerMinute = 150; // Average speech rate for ElevenLabs
     const durationInMinutes = words / wordsPerMinute;
     const durationInSeconds = durationInMinutes * 60;
     
-    // Add a small buffer (10%) to account for pauses and variations
-    return Math.max(durationInSeconds * 1.1, 10); // Minimum 10 seconds
+    // Cap at 30 seconds maximum and ensure minimum 10 seconds
+    const cappedDuration = Math.min(durationInSeconds * 1.1, 30); // 10% buffer, max 30 seconds
+    return Math.max(cappedDuration, 10); // Minimum 10 seconds
   } else {
     // Rough estimate based on buffer size (for MP3, approximately 1 minute = 1MB at 128kbps)
     const sizeInMB = textOrBufferSize / (1024 * 1024);
-    return Math.max(sizeInMB * 60, 10); // Very rough estimate, minimum 10 seconds
+    const estimatedDuration = sizeInMB * 60;
+    // Cap at 30 seconds maximum
+    return Math.max(Math.min(estimatedDuration, 30), 10); // Between 10-30 seconds
   }
 }
 
@@ -122,6 +125,7 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
     
     console.log('Generating voice with Eleven Labs...');
     console.log('Text length:', text.length, 'characters');
+    console.log('Word count:', text.trim().split(/\s+/).length, 'words');
     
     // Make direct API call to ElevenLabs
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB`, {

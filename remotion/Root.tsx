@@ -8,7 +8,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="BrainrotVideo"
         component={BrainrotVideo as any}
-        durationInFrames={1800} // 60 seconds at 30fps - for minute-long videos
+        durationInFrames={1050} // 30 seconds at 30fps - for 30-second videos
         fps={30}
         width={1080}
         height={1920} // Vertical format for TikTok/Shorts

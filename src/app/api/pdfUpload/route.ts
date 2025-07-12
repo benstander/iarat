@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { generateVideoScript } from '@/lib/script-generation';
 
 export const maxDuration = 60; // Increased for multiple topic processing
 
@@ -28,6 +29,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'File must be a PDF' },
         { status: 400 }
+      );
+    }
+
+    // Check file size (limit to 10MB to prevent the 1MB error)
+    const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSizeInBytes) {
+      return NextResponse.json(
+        { error: 'PDF file size must be less than 10MB. Please use a smaller file.' },
+        { status: 413 }
       );
     }
 
@@ -96,38 +106,28 @@ export async function POST(req: NextRequest) {
 
     console.log(`Successfully split into ${topics.length} topics`);
 
-    // Step 2: Generate brainrot summaries for each topic
+    // Step 2: Generate scripts for each topic using the shared utility
     const summaries = [];
     
     for (let i = 0; i < topics.length; i++) {
       const topic = topics[i];
-      console.log(`Generating brainrot summary for topic ${i + 1}: ${topic.title}`);
+      console.log(`Generating script for topic ${i + 1}: ${topic.title}`);
       
       try {
-        const summaryResult = await generateText({
-          model: openai('gpt-4o'),
-          prompt: `
-            Create a ${brainrotStyle} brainrot-style summary of the following topic that will be exactly 30 seconds when spoken (about 75 words).
-            
-            Use Gen-Z language, viral TikTok style, and make it engaging and fun while keeping the core information.
-            Examples of brainrot style: "No cap", "It's giving...", "That's lowkey fire", "This is actually insane", etc.
-            
-            Topic: ${topic.title}
-            Content: ${topic.content}
-            
-            Return ONLY the script text, nothing else:
-          `,
-          maxTokens: 200,
+        // Use the shared script generation utility
+        const script = await generateVideoScript({
+          textContent: `${topic.title}: ${topic.content}`,
+          brainrotStyle
         });
 
         summaries.push({
           topicTitle: topic.title,
-          script: summaryResult.text.trim(),
+          script: script,
           topicIndex: i + 1
         });
         
-      } catch (summaryError) {
-        console.error(`Error generating summary for topic ${i + 1}:`, summaryError);
+      } catch (scriptError) {
+        console.error(`Error generating script for topic ${i + 1}:`, scriptError);
         // Add a fallback summary
         summaries.push({
           topicTitle: topic.title,
@@ -148,6 +148,15 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('PDF processing error:', error);
+    
+    // Check if it's a body size error
+    if (error instanceof Error && error.message.includes('Body exceeded')) {
+      return NextResponse.json(
+        { error: 'PDF file is too large. Please use a file smaller than 10MB.' },
+        { status: 413 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to process PDF file' },
       { status: 500 }

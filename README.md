@@ -4,7 +4,7 @@ Transform any educational content into viral Gen-Z brainrot videos! Upload PDFs,
 
 ## ⚡ Recent Optimizations
 
-- **⏱️ 20-30 Second Videos**: Optimized for TikTok attention spans (down from 100+ seconds)
+- **⏱️ 30 Second Videos**: Optimized for TikTok attention spans (down from 100+ seconds)
 - **🚀 Faster Rendering**: 2x concurrency and optimized Remotion settings
 - **☁️ Supabase Storage**: Videos and audio stored in the cloud for better scalability
 - **🎯 Shorter Scripts**: Punchy, viral-ready content generation
@@ -69,7 +69,7 @@ npm run dev
 ## 📱 Example Output
 
 Input: Educational PDF about business strategy
-Output: 25-second video with:
+Output: 30-second video with:
 - "POV: You thought business strategy was boring but it's literally just corporate rizz..." 
 - Animated captions with brainrot styling
 - ElevenLabs voice narration
@@ -84,7 +84,7 @@ Output: 25-second video with:
 
 ## 🚨 Performance Notes
 
-- Videos are optimized to 20-30 seconds for faster rendering
+- Videos are optimized to exactly 30 seconds for faster rendering
 - Concurrency set to 2x for better performance
 - Supabase storage prevents local disk overflow
 - First render downloads Chrome (~85MB) - subsequent renders are faster
