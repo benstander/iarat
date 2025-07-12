@@ -27,7 +27,7 @@ export class FFmpegVideoRenderer {
   private static readonly VIDEO_WIDTH = 1080;
   private static readonly VIDEO_HEIGHT = 1920;
   private static readonly FPS = 30; // Reduced from 45 for better compatibility
-  private static readonly FONT_SIZE = 32;
+  private static readonly FONT_SIZE = 26;
   private static readonly FONT_FAMILY = 'Arial Black';
   private static readonly MAX_WORDS_PER_CAPTION = 3;
   private static readonly MIN_WORDS_PER_CAPTION = 1;
@@ -685,8 +685,7 @@ export class FFmpegVideoRenderer {
         
         [scaled]subtitles=${subtitlePath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}:force_style='FontName=${this.FONT_FAMILY},FontSize=${this.FONT_SIZE},PrimaryColour=&Hffffff,OutlineColour=&H000000,Outline=3,Shadow=2,Bold=1,Alignment=2,MarginV=100'[with_subs];
         
-        [with_subs]drawtext=text='🔥':fontsize=32:fontcolor=white:x=60:y=100:alpha=0.8[emoji1];
-        [emoji1]drawtext=text='⚡':fontsize=32:fontcolor=white:x=w-100:y=100:alpha=0.8[final_video];
+        [with_subs]copy[final_video];
         
         [1:a]volume=1.0[voice_audio];
         [0:a]volume=0.2[bg_audio];

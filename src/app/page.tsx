@@ -404,12 +404,12 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-30">
+    <div className="min-h-screen bg-black text-white pt-20 pb-20 pl-30 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {/* Left Column - Upload and Style Section */}
-        <Card className="rounded-2xl shadow-2xl border border-gray-200 bg-white text-black h-[600px] flex flex-col overflow-hidden">
+        <Card className="rounded-2xl shadow-2xl border border-gray-200 bg-white text-black h-[660px] flex flex-col overflow-hidden">
             <CardHeader className="flex-shrink-0">
               <CardTitle className="text-2xl font-bold text-black flex items-center gap-3">
                 {viewMode === 'topics' ? (
@@ -427,8 +427,7 @@ export default function Home() {
                   </>
                 ) : (
                   <>
-                    <Upload className="h-6 w-6" />
-                    Create Your Video
+                    Turn your notes into brainrot
                   </>
                 )}
               </CardTitle>
@@ -437,12 +436,6 @@ export default function Home() {
               {viewMode === 'topics' ? (
                 // Topic Selection View
                 <div className="flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                    <p className="text-sm text-gray-600">
-                      {topicSummaries.length} topics found • Select topics to generate
-                    </p>
-                  </div>
-                  
                   <div className="flex-1 overflow-y-auto space-y-3 pr-2 min-h-0">
                     {topicSummaries.map((summary, index) => {
                       const isSelected = selectedTopics.has(summary.topicIndex)
@@ -472,30 +465,7 @@ export default function Home() {
                             
                             <div className="flex items-center gap-2">
                               {isGenerated ? (
-                                <div className="flex items-center gap-2">
-                                  <div className="p-1 bg-green-600 rounded-full">
-                                    <Play className="h-3 w-3 text-white" />
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <a
-                                      href={existingVideo.videoUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      View
-                                    </a>
-                                    <a
-                                      href={existingVideo.videoUrl}
-                                      download
-                                      className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <Download className="h-3 w-3" />
-                                    </a>
-                                  </div>
-                                </div>
+                                <></>
                               ) : isSelected ? (
                                 <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
                                   <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -515,7 +485,7 @@ export default function Home() {
                     <Button
                       onClick={generateVideosForSelectedTopics}
                       disabled={isGeneratingVideos || selectedTopics.size === 0}
-                      className="w-full h-12 rounded-[8px] font-semibold bg-purple-600 hover:bg-purple-700 text-white"
+                      className="w-full h-14 rounded-[8px] font-semibold text-md bg-black text-white hover:bg-gray-900 disabled:bg-black disabled:text-white disabled:opacity-60"
                     >
                       {isGeneratingVideos ? 
                         "Generating Videos..." : 
@@ -578,7 +548,7 @@ export default function Home() {
                       {activeSection === 'pdf' && (
                         <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                           <Label htmlFor="file-upload" className="text-sm font-medium text-gray-700">
-                            PDF Upload (Drag & Drop or Click)
+                            PDF Upload
                           </Label>
                           <div
                             className={`relative border-2 border-dashed rounded-[10px] p-6 text-center transition-all duration-200 cursor-pointer ${
@@ -597,16 +567,15 @@ export default function Home() {
                             <Input id="file-upload" type="file" accept=".pdf" onChange={handleFileChange} className="hidden" />
                             {uploadedFile ? (
                               <div className="flex items-center justify-center gap-2 text-green-700">
-                                <FileText className="h-8 w-8" />
+                                <FileText className="h-6 w-6" />
                                 <span className="font-medium">{uploadedFile.name}</span>
                               </div>
                             ) : (
                               <div className="space-y-2">
-                                <Upload className="h-10 w-10 mx-auto text-gray-400" />
+                                <Upload className="h-6 w-6 mx-auto text-gray-400" />
                                 <p className="text-gray-700">
-                                  <span className="font-medium">Click to upload</span> or drag and drop
+                                  <span className="font-regular text-sm">Click to upload or drag and drop</span>
                                 </p>
-                                <p className="text-sm text-gray-400">PDF files only</p>
                               </div>
                             )}
                           </div>
@@ -678,11 +647,11 @@ export default function Home() {
 
                       {/* Voice & Audio Section */}
                       <div className="space-y-3">
-                        <Label className="text-sm font-medium text-black">Voice & Audio</Label>
-                        <div className="flex items-center justify-between p-3 bg-gray-100 rounded-[8px]">
+                        <Label className="text-sm font-medium text-black">Voiceover</Label>
+                        <div className="flex items-center justify-between p-3 bg-gray-100 rounded-[8px] h-12">
                           <div className="flex items-center space-x-2">
                             <Label htmlFor="voiceover" className="text-sm font-medium text-black">
-                              AI Voiceover
+                              Enable Audio
                             </Label>
                           </div>
                           <Switch
@@ -696,7 +665,7 @@ export default function Home() {
                   </div>
 
                   {/* FIXED Generate Button - Always at bottom */}
-                  <div className="border-t border-gray-200 pt-4 bg-white h-20 flex-shrink-0">
+                  <div className="pt-6 bg-white h-20 flex-shrink-0">
                     <Button
                       onClick={() => {
                         if (activeSection === 'pdf' && uploadedFile) {
@@ -707,8 +676,7 @@ export default function Home() {
                           handleGenerate()
                         }
                       }}
-                      className="w-full h-14 rounded-[8px] font-semibold text-md bg-purple-600 hover:bg-purple-700 text-white disabled:bg-gray-300 disabled:text-gray-500"
-                      variant="purple"
+                      className="w-full h-14 rounded-[8px] font-semibold text-md bg-black text-white hover:bg-gray-900 disabled:bg-black disabled:text-white disabled:opacity-60"
                       disabled={
                         isGenerating || 
                         !backgroundVideo ||
@@ -719,10 +687,10 @@ export default function Home() {
                       }
                     >
                       {isGenerating ? 
-                        (activeSection === 'pdf' ? "Analyzing PDF & Creating Topics..." : "Generating Video...") : 
+                        (activeSection === 'pdf' ? "Generating topics..." : "Generating Video...") : 
                         activeSection === null ? 
                           "Select a Content Type Above" :
-                          "Generate Brainrot Video"
+                          "Generate Video"
                       }
                     </Button>
                   </div>
@@ -786,26 +754,18 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="w-full h-full bg-black rounded-lg shadow-2xl flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <p className="text-gray-400 text-center whitespace-pre-line text-lg">
-                      {isGenerating || isGeneratingVideos
-                        ? (currentGeneratingTopic 
-                            ? `🔥 Creating Video for:\n"${currentGeneratingTopic}"\n\n⚡ This might take a few minutes`
-                            : "🔥 Creating Your\nBrainrot Videos...\n\n⚡ This might take a few minutes") 
-                        : "📱 Upload content &\nselect background to\nget started"}
-                    </p>
-                    {(isGenerating || isGeneratingVideos) && (
-                      <div className="mt-6 space-y-3">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-                        <div className="text-sm text-gray-500">
-                          {activeSection === 'pdf' && !currentGeneratingTopic ? 
-                            "Analyzing content... Splitting into topics..." :
-                            "Generating voice... Rendering video..."
-                          }
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {/* Show Minecraft Parkour background video when idle */}
+                  <video
+                    className="w-full h-full object-cover rounded-lg"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    src={"https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/background-videos/landing%20page/video_1752314200708_topic4.mp4"}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                  {/* If you do not see the video, add your Minecraft parkour video as public/minecraft-parkour.mp4 */}
                 </div>
               )}
             </div>
