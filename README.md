@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔥 IARAT - AI Brainrot Video Generator
 
-## Getting Started
+Transform any educational content into viral Gen-Z brainrot videos! Upload PDFs, YouTube links, or text notes and get TikTok-ready videos with AI-generated voice and animated captions.
 
-First, run the development server:
+## ⚡ Recent Optimizations
+
+- **⏱️ 20-30 Second Videos**: Optimized for TikTok attention spans (down from 100+ seconds)
+- **🚀 Faster Rendering**: 2x concurrency and optimized Remotion settings
+- **☁️ Supabase Storage**: Videos and audio stored in the cloud for better scalability
+- **🎯 Shorter Scripts**: Punchy, viral-ready content generation
+
+## 🌟 Features
+
+- **📄 PDF Processing**: Extract text and convert to brainrot scripts
+- **🎥 YouTube Transcription**: Turn any YouTube video into brainrot content
+- **✍️ Manual Input**: Paste any text for conversion
+- **🎙️ AI Voice Generation**: ElevenLabs integration for realistic voice
+- **🎬 Video Rendering**: Remotion-powered video creation with animated captions
+- **📱 Mobile-Optimized**: 1080x1920 vertical format for TikTok/Instagram
+
+## 🚀 Quick Setup
+
+### 1. Environment Variables
+Create `.env.local` in the project root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# OpenAI for script generation
+OPENAI_API_KEY=your_openai_api_key_here
+
+# ElevenLabs for voice generation
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+
+# Supabase for video storage (optional - fallback to local)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# Base URL
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Supabase Setup (Optional)
+Create two storage buckets in your Supabase project:
+- `generated-videos` (public bucket)
+- `generated-audio` (public bucket)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Install & Run
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🎯 How It Works
 
-## Learn More
+1. **Input**: Upload PDF, YouTube link, or paste text
+2. **Script Generation**: ChatGPT converts to Gen-Z brainrot language
+3. **Voice Generation**: ElevenLabs creates realistic voice audio
+4. **Video Rendering**: Remotion combines voice, captions, and background video
+5. **Storage**: Upload to Supabase or store locally
+6. **Output**: Download viral-ready TikTok video!
 
-To learn more about Next.js, take a look at the following resources:
+## 🔧 Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS
+- **Video Generation**: Remotion
+- **AI**: OpenAI GPT-4, ElevenLabs
+- **Storage**: Supabase (with local fallback)
+- **Processing**: PDF-parse, YouTube transcription
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📱 Example Output
 
-## Deploy on Vercel
+Input: Educational PDF about business strategy
+Output: 25-second video with:
+- "POV: You thought business strategy was boring but it's literally just corporate rizz..." 
+- Animated captions with brainrot styling
+- ElevenLabs voice narration
+- Subway Surfers or Minecraft parkour background
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🎨 Customization
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Background Videos**: Choose between Minecraft or Subway Surfers
+- **Voice Settings**: Modify voice parameters in `src/lib/voice-generation.ts`
+- **Caption Styling**: Customize animations in `remotion/Captions.tsx`
+- **Script Style**: Adjust prompts in API routes for different tones
+
+## 🚨 Performance Notes
+
+- Videos are optimized to 20-30 seconds for faster rendering
+- Concurrency set to 2x for better performance
+- Supabase storage prevents local disk overflow
+- First render downloads Chrome (~85MB) - subsequent renders are faster
+
+## 🎉 Ready to Create Viral Content?
+
+1. Add your API keys
+2. Upload some content
+3. Watch the magic happen! ✨

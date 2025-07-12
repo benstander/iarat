@@ -7,9 +7,25 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Switch } from "@/components/ui/switch"
-import { Upload, FileText, Video, Link, Play, StickyNote } from "lucide-react"
+import { Upload, FileText, Video, Link, StickyNote, Play, Download } from "lucide-react"
+
+interface TopicSummary {
+  topicTitle: string;
+  script: string;
+  topicIndex: number;
+}
+
+interface VideoResult {
+  success: boolean;
+  videoUrl?: string;
+  voiceAudioUrl?: string;
+  message?: string;
+  topicTitle?: string;
+  topicIndex?: number;
+  error?: string;
+}
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<'pdf' | 'youtube' | 'notes' | null>(null)
@@ -17,15 +33,24 @@ export default function Home() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [youtubeLink, setYoutubeLink] = useState("")
   const [parsedTextContent, setParsedTextContent] = useState("")
-  const [brainrotStyle, setBrainrotStyle] = useState("")
+
   const [backgroundVideo, setBackgroundVideo] = useState("")
   const [memeSfx, setMemeSfx] = useState(true)
   const [voiceover, setVoiceover] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedScript, setGeneratedScript] = useState("")
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState("")
+
+  // New state for topic-based workflow
+  const [topicSummaries, setTopicSummaries] = useState<TopicSummary[]>([])
+  const [generatedVideos, setGeneratedVideos] = useState<VideoResult[]>([])
+  const [isGeneratingVideos, setIsGeneratingVideos] = useState(false)
+  const [currentGeneratingTopic, setCurrentGeneratingTopic] = useState<string>("")
 
   const handleSectionToggle = (section: 'pdf' | 'youtube' | 'notes') => {
     setActiveSection(activeSection === section ? null : section)
+    // Reset topic summaries when switching sections
+    setTopicSummaries([])
+    setGeneratedVideos([])
   }
 
   const handleDrag = (e: React.DragEvent) => {
@@ -47,9 +72,126 @@ export default function Home() {
       const file = e.dataTransfer.files[0]
       if (file.type === "application/pdf") {
         setUploadedFile(file)
-        // TODO: Process PDF and extract text (not using Vercel AI SDK)
-        // setParsedTextContent(extractedText)
       }
+    }
+  }
+
+  const processPDF = async (file: File) => {
+    if (!backgroundVideo) {
+      alert("Please select a background video first!")
+      return
+    }
+
+    setIsGenerating(true)
+    setGeneratedVideoUrl("")
+    setTopicSummaries([])
+    setGeneratedVideos([])
+    
+    try {
+      const formData = new FormData()
+      formData.append('pdf', file)
+
+      const response = await fetch('/api/pdf-upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to process PDF')
+      }
+
+      const data = await response.json()
+      console.log(`Successfully processed PDF: ${data.fileName} (${data.pageCount} pages)`)
+      console.log(`Generated ${data.summaries.length} topic summaries`)
+      
+      // Set the topic summaries for user to review
+      setTopicSummaries(data.summaries)
+      
+    } catch (error) {
+      console.error('Error processing PDF:', error)
+      alert('Failed to process PDF. Please try again.')
+      setUploadedFile(null)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const generateVideosForAllTopics = async () => {
+    if (topicSummaries.length === 0) return
+
+    setIsGeneratingVideos(true)
+    setGeneratedVideos([])
+    setCurrentGeneratingTopic("")
+
+    try {
+      const response = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          summaries: topicSummaries,
+          backgroundVideo: backgroundVideo === 'subway-surfers' ? 'subway' : 'minecraft',
+          voiceEnabled: voiceover,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate videos')
+      }
+
+      const data = await response.json()
+      console.log(`Generated ${data.successfulVideos}/${data.totalVideos} videos successfully`)
+      
+      setGeneratedVideos(data.videos)
+      alert(`Successfully generated ${data.successfulVideos}/${data.totalVideos} videos!`)
+      
+    } catch (error) {
+      console.error('Error generating videos:', error)
+      alert('Failed to generate videos. Please try again.')
+    } finally {
+      setIsGeneratingVideos(false)
+      setCurrentGeneratingTopic("")
+    }
+  }
+
+  const generateVideoForSingleTopic = async (summary: TopicSummary) => {
+    setCurrentGeneratingTopic(summary.topicTitle)
+
+    try {
+      const response = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          script: summary.script,
+          backgroundVideo: backgroundVideo === 'subway-surfers' ? 'subway' : 'minecraft',
+          voiceEnabled: voiceover,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate video')
+      }
+
+      const data = await response.json()
+      
+      // Add to generated videos list
+      const newVideo: VideoResult = {
+        ...data,
+        topicTitle: summary.topicTitle,
+        topicIndex: summary.topicIndex
+      }
+      
+      setGeneratedVideos(prev => [...prev, newVideo])
+      alert(`Video for "${summary.topicTitle}" generated successfully!`)
+      
+    } catch (error) {
+      console.error('Error generating video:', error)
+      alert(`Failed to generate video for "${summary.topicTitle}". Please try again.`)
+    } finally {
+      setCurrentGeneratingTopic("")
     }
   }
 
@@ -58,50 +200,112 @@ export default function Home() {
       const file = e.target.files[0]
       if (file.type === "application/pdf") {
         setUploadedFile(file)
-        // TODO: Process PDF and extract text (not using Vercel AI SDK)
-        // setParsedTextContent(extractedText)
       }
     }
   }
 
   const handleYoutubeLinkProcess = async () => {
-    if (youtubeLink.trim()) {
-      setIsGenerating(true)
-      try {
-        const response = await fetch('/api/youtube-transcribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            youtubeUrl: youtubeLink,
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to transcribe YouTube video')
-        }
-
-        const data = await response.json()
-        setParsedTextContent(data.transcript)
-        console.log("Successfully transcribed YouTube video")
-      } catch (error) {
-        console.error('Error transcribing YouTube video:', error)
-        alert('Failed to transcribe YouTube video. Please check the URL and try again.')
-      } finally {
-        setIsGenerating(false)
-      }
+    if (!youtubeLink.trim()) {
+      alert("Please enter a YouTube URL!")
+      return
     }
-  }
-
-  const handleGenerate = async () => {
-    if (!brainrotStyle || !parsedTextContent.trim()) {
-      alert("Please select a brainrot style and provide text content!")
+    
+    if (!backgroundVideo) {
+      alert("Please select a background video first!")
       return
     }
 
     setIsGenerating(true)
-    setGeneratedScript("")
+    setGeneratedVideoUrl("")
+    
+    try {
+      // First transcribe the YouTube video
+      const transcribeResponse = await fetch('/api/youtube-transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          youtubeUrl: youtubeLink,
+        }),
+      })
+
+      if (!transcribeResponse.ok) {
+        throw new Error('Failed to transcribe YouTube video')
+      }
+
+      const transcribeData = await transcribeResponse.json()
+      console.log("Successfully transcribed YouTube video")
+
+      // Then generate script from transcript
+      const scriptResponse = await fetch('/api/generate-video-script', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          textContent: transcribeData.transcript,
+        }),
+      })
+
+      if (!scriptResponse.ok) {
+        throw new Error('Failed to generate script')
+      }
+
+      const scriptData = await scriptResponse.json()
+      console.log("Successfully generated script from YouTube video")
+      
+      // Now generate the video with the script
+      await generateVideoWithScript(scriptData.script)
+    } catch (error) {
+      console.error('Error processing YouTube video:', error)
+      alert('Failed to process YouTube video. Please check the URL and try again.')
+      setIsGenerating(false)
+    }
+  }
+
+  const generateVideoWithScript = async (script: string) => {
+    try {
+      const response = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          script: script,
+          backgroundVideo: backgroundVideo === 'subway-surfers' ? 'subway' : 'minecraft',
+          voiceEnabled: voiceover,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate video')
+      }
+
+      const data = await response.json()
+      setGeneratedVideoUrl(data.videoUrl)
+      alert('Video generated successfully!')
+    } catch (error) {
+      console.error('Error generating video:', error)
+      alert('Failed to generate video. Please try again.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleGenerate = async () => {
+    if (!parsedTextContent.trim()) {
+      alert("Please provide text content!")
+      return
+    }
+
+    if (!backgroundVideo) {
+      alert("Please select a background video first!")
+      return
+    }
+
+    setIsGenerating(true)
+    setGeneratedVideoUrl("")
 
     try {
       const response = await fetch('/api/generate-video-script', {
@@ -111,7 +315,6 @@ export default function Home() {
         },
         body: JSON.stringify({
           textContent: parsedTextContent,
-          brainrotStyle,
         }),
       })
 
@@ -120,11 +323,13 @@ export default function Home() {
       }
 
       const data = await response.json()
-      setGeneratedScript(data.script)
+      console.log("Successfully generated script from notes")
+      
+      // Now generate the video with the script
+      await generateVideoWithScript(data.script)
     } catch (error) {
       console.error('Error generating video script:', error)
       alert('Failed to generate video script. Please try again.')
-    } finally {
       setIsGenerating(false)
     }
   }
@@ -143,7 +348,7 @@ export default function Home() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
-              <div className="flex-1 space-y-6">
+              <div className="flex-1 space-y-6 overflow-y-auto">
                 {/* Three Section Blocks */}
                 <div className="grid grid-cols-3 gap-3">
                   {/* PDF Block */}
@@ -188,7 +393,7 @@ export default function Home() {
 
                 {/* Conditional Sections Based on Active Selection */}
                 {activeSection === 'pdf' && (
-                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                     <Label htmlFor="file-upload" className="text-sm font-medium text-gray-700">
                       PDF Upload (Drag & Drop or Click)
                     </Label>
@@ -222,6 +427,69 @@ export default function Home() {
                         </div>
                       )}
                     </div>
+
+                    {/* Topic Summaries Display */}
+                    {topicSummaries.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Topics Found ({topicSummaries.length})
+                          </Label>
+                          <Button
+                            onClick={generateVideosForAllTopics}
+                            disabled={isGeneratingVideos}
+                            size="sm"
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                          >
+                            {isGeneratingVideos ? "Generating..." : "Generate All Videos"}
+                          </Button>
+                        </div>
+                        <div className="max-h-40 overflow-y-auto space-y-2">
+                          {topicSummaries.map((summary, index) => {
+                            const isGenerating = currentGeneratingTopic === summary.topicTitle
+                            const existingVideo = generatedVideos.find(v => v.topicIndex === summary.topicIndex)
+                            
+                            return (
+                              <div key={index} className="p-3 bg-gray-50 rounded-lg border">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium text-sm text-gray-800 truncate">
+                                      {summary.topicTitle}
+                                    </h4>
+                                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                      {summary.script.substring(0, 100)}...
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    {existingVideo?.success ? (
+                                      <a
+                                        href={existingVideo.videoUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1 text-green-600 hover:text-green-700"
+                                        title="View video"
+                                      >
+                                        <Play className="h-4 w-4" />
+                                      </a>
+                                    ) : (
+                                      <Button
+                                        onClick={() => generateVideoForSingleTopic(summary)}
+                                        disabled={isGenerating || isGeneratingVideos}
+                                        size="sm"
+                                        variant="outline"
+                                        className="px-2 py-1 h-6 text-xs"
+                                      >
+                                        {isGenerating ? "..." : "Generate"}
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -230,30 +498,16 @@ export default function Home() {
                     <Label htmlFor="youtube-link" className="text-sm font-medium text-gray-700">
                       YouTube Link
                     </Label>
-                    <div className="flex gap-2">
-                      <div className="flex-1 relative">
-                        <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="youtube-link"
-                          type="url"
-                          placeholder="https://youtube.com/watch?v=..."
-                          value={youtubeLink}
-                          onChange={(e) => setYoutubeLink(e.target.value)}
-                          className="pl-10 rounded-[10px] bg-gray-100 border-gray-300 text-black placeholder:text-gray-400 focus:border-gray-500 focus:ring-gray-500"
-                        />
-                      </div>
-                      <Button
-                        onClick={handleYoutubeLinkProcess}
-                        disabled={!youtubeLink.trim() || isGenerating}
-                        variant="outline"
-                        className="rounded-[10px] border-gray-300 text-gray-700 hover:bg-gray-100"
-                      >
-                        {isGenerating ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
-                        ) : (
-                          <Play className="h-4 w-4" />
-                        )}
-                      </Button>
+                    <div className="relative">
+                      <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="youtube-link"
+                        type="url"
+                        placeholder="https://youtube.com/watch?v=..."
+                        value={youtubeLink}
+                        onChange={(e) => setYoutubeLink(e.target.value)}
+                        className="pl-10 rounded-[10px] bg-gray-100 border-gray-300 text-black placeholder:text-gray-400 focus:border-gray-500 focus:ring-gray-500"
+                      />
                     </div>
                   </div>
                 )}
@@ -261,14 +515,11 @@ export default function Home() {
                 {activeSection === 'notes' && (
                   <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                     <Label htmlFor="parsedTextContent" className="text-sm font-medium text-gray-700">
-                      Course Notes
-                      {parsedTextContent && (
-                        <span className="text-xs text-green-600 ml-2">(✓ Content loaded)</span>
-                      )}
+                      Manual Text Input
                     </Label>
                     <Textarea
                       id="parsedTextContent"
-                      placeholder="Text content will appear here after processing PDF/YouTube, or paste manually..."
+                      placeholder="Paste your course notes, lecture content, or any text you want to convert to brainrot..."
                       value={parsedTextContent}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setParsedTextContent(e.target.value)}
                       className="min-h-32 rounded-[10px] bg-gray-100 border-gray-300 text-black placeholder:text-gray-400 focus:border-gray-500 focus:ring-gray-500"
@@ -305,60 +556,165 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Generated Script Preview */}
-                {generatedScript && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Generated Script 
-                      <span className="text-xs text-green-600 ml-2">(✓ Generated via Vercel AI SDK + OpenAI)</span>
-                    </Label>
-                    <div className="bg-gray-100 rounded-[10px] p-4 max-h-40 overflow-y-auto">
-                      <pre className="text-sm text-gray-800 whitespace-pre-wrap">{generatedScript}</pre>
+                {/* Voice & Audio Section */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-black">Voice & Audio</Label>
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-[8px]">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="voiceover" className="text-sm font-medium text-black">
+                        AI Voiceover
+                      </Label>
                     </div>
+                    <Switch
+                      id="voiceover"
+                      checked={voiceover}
+                      onCheckedChange={setVoiceover}
+                    />
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Generate Button - Always at Bottom */}
+              {/* Generate Video Button - For all sections */}
               <div className="pt-4 border-t border-gray-200 mt-auto">
                 <Button
-                  onClick={handleGenerate}
+                  onClick={() => {
+                    if (activeSection === 'pdf' && uploadedFile) {
+                      processPDF(uploadedFile)
+                    } else if (activeSection === 'youtube' && youtubeLink.trim()) {
+                      handleYoutubeLinkProcess()
+                    } else if (activeSection === 'notes' && parsedTextContent.trim()) {
+                      handleGenerate()
+                    }
+                  }}
                   className="w-full h-14 rounded-[8px] font-semibold text-md"
                   variant="purple"
-                  disabled={!parsedTextContent.trim() || !brainrotStyle || isGenerating}
+                  disabled={
+                    isGenerating || 
+                    !backgroundVideo ||
+                    (activeSection === 'pdf' && (!uploadedFile || topicSummaries.length > 0)) ||
+                    (activeSection === 'youtube' && !youtubeLink.trim()) ||
+                    (activeSection === 'notes' && !parsedTextContent.trim())
+                  }
                 >
-                  {isGenerating ? "Generating..." : "Generate Video"}
+                  {isGenerating ? 
+                    (activeSection === 'pdf' ? "Analyzing PDF & Creating Topics..." : "Generating Video...") : 
+                    (activeSection === 'pdf' && topicSummaries.length > 0 ? "Topics Generated" : "Generate Brainrot Video")
+                  }
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Right Column - Script Preview or iPhone Video Preview */}
+          {/* Right Column - iPhone Video Preview */}
           <div className="flex items-center justify-center">
-            {generatedScript ? (
-              <Card className="w-full h-[600px] rounded-2xl shadow-2xl border border-gray-200 bg-white">
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold text-black flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Generated Script
-                    <span className="text-xs text-green-600 font-normal ml-2">(Vercel AI SDK + OpenAI)</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="h-[500px] overflow-y-auto">
-                  <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                    {generatedScript}
+            <div className="bg-gray-800 rounded-[2.5rem] p-4 w-80 h-[600px] shadow-2xl">
+              <div className="bg-black rounded-[2rem] w-full h-full flex items-center justify-center relative overflow-hidden">
+                {generatedVideoUrl ? (
+                  <div className="w-full h-full relative flex items-center justify-center">
+                    <div className="w-full h-full flex items-center justify-center">
+                      <video
+                        controls
+                        autoPlay
+                        muted
+                        loop
+                        className="w-full h-full object-cover aspect-[9/16] rounded-[2rem]"
+                        src={generatedVideoUrl}
+                        onError={(e) => {
+                          console.error('Video playback error:', e);
+                        }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                    {/* Success overlay */}
+                    <div className="absolute top-4 left-4 right-4 z-10">
+                      <div className="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium text-center">
+                        ✅ Video Generated Successfully!
+                      </div>
+                    </div>
+                    {/* Download button */}
+                    <div className="absolute bottom-4 left-4 right-4 z-10">
+                      <a
+                        href={generatedVideoUrl}
+                        download
+                        className="w-full bg-white text-black px-4 py-2 rounded-lg text-sm font-medium text-center block hover:bg-gray-100 transition-colors"
+                      >
+                        📥 Download Video
+                      </a>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="bg-gray-800 rounded-[2.5rem] p-4 w-80 h-[600px] shadow-2xl">
-                <div className="bg-black rounded-[2rem] w-full h-full flex items-center justify-center">
-                  <p className="text-gray-400 text-center">
-                    {isGenerating ? "Generating Script..." : "Video Preview\nComing Soon"}
-                  </p>
-                </div>
+                ) : generatedVideos.length > 0 ? (
+                  <div className="w-full h-full relative">
+                    {/* Video Gallery View */}
+                    <div className="p-4 h-full overflow-y-auto">
+                      <h3 className="text-white text-sm font-medium mb-3">Generated Videos ({generatedVideos.length})</h3>
+                      <div className="space-y-3">
+                        {generatedVideos.map((video, index) => (
+                          <div key={index} className="bg-gray-800 rounded-lg p-3">
+                            <h4 className="text-white text-xs font-medium mb-2 truncate">
+                              {video.topicTitle}
+                            </h4>
+                            {video.success && video.videoUrl ? (
+                              <div className="space-y-2">
+                                <video
+                                  controls
+                                  className="w-full aspect-[9/16] object-cover rounded"
+                                  src={video.videoUrl}
+                                >
+                                  Your browser does not support the video tag.
+                                </video>
+                                <div className="flex gap-2">
+                                  <a
+                                    href={video.videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 bg-blue-600 text-white px-2 py-1 rounded text-xs text-center hover:bg-blue-700"
+                                  >
+                                    View
+                                  </a>
+                                  <a
+                                    href={video.videoUrl}
+                                    download
+                                    className="flex-1 bg-green-600 text-white px-2 py-1 rounded text-xs text-center hover:bg-green-700"
+                                  >
+                                    Download
+                                  </a>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-red-400 text-xs">
+                                Failed to generate: {video.error}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-8">
+                    <p className="text-gray-400 text-center whitespace-pre-line text-lg">
+                      {isGenerating || isGeneratingVideos
+                        ? (currentGeneratingTopic 
+                            ? `🔥 Creating Video for:\n"${currentGeneratingTopic}"\n\n⚡ This might take a few minutes`
+                            : "🔥 Creating Your\nBrainrot Videos...\n\n⚡ This might take a few minutes") 
+                        : "📱 Upload content &\nselect background to\nget started"}
+                    </p>
+                    {(isGenerating || isGeneratingVideos) && (
+                      <div className="mt-6 space-y-3">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+                        <div className="text-sm text-gray-500">
+                          {activeSection === 'pdf' && !currentGeneratingTopic ? 
+                            "Analyzing content... Splitting into topics..." :
+                            "Generating voice... Rendering video..."
+                          }
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

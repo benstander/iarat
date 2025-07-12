@@ -1,6 +1,15 @@
 import ytdl from 'ytdl-core'
 import { experimental_transcribe as transcribe } from 'ai'
 import { openai } from '@ai-sdk/openai'
+import { supabase } from './supabase';
+
+const MINECRAFT_VIDEOS = [
+  'mp1.mp4',
+  'mp2.mp4',
+  'mp3.mp4',
+  'mp4.mp4',
+  'mp5.mp4',
+];
 
 export async function urlToAudioBuffer(url: string) {
     if (!ytdl.validateURL(url)) {
@@ -28,4 +37,14 @@ export async function transcribeAudio(audioBuffer: Buffer) {
     })
 
     return result.text
+}
+
+export function getRandomMinecraftVideoUrl() {
+  const randomIndex = Math.floor(Math.random() * MINECRAFT_VIDEOS.length);
+  const filename = MINECRAFT_VIDEOS[randomIndex];
+  const { data } = supabase
+    .storage
+    .from('background-videos')
+    .getPublicUrl(`minecraft parkour/${filename}`);
+  return data.publicUrl;
 }
