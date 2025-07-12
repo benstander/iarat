@@ -348,3 +348,9 @@ MIT License - see LICENSE file for details.
 ---
 
 **Status**: ✅ **Complete 1-minute duration control implemented** - videos automatically stay within 60-second limit with intelligent content optimization and ElevenLabs speaking rate calibration.
+
+## Storage Changes (June 2024)
+- Generated videos and audio are no longer uploaded to Supabase Storage.
+- After generation, videos and audio are only available in the browser (served from /public/generated-videos).
+- If the user refreshes, the generated content will be lost.
+- Supabase is now only used for fetching background videos (e.g., Minecraft parkour backgrounds).

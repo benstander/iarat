@@ -412,34 +412,17 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
   }
 }
 
-export async function saveVoiceToFile(audioBuffer: Buffer, filename: string): Promise<string> {
+export async function saveVoiceToFile(audioBuffer: Buffer, filename: string): Promise<{ publicUrl: string, filePath: string }> {
   try {
-    // Try Supabase first, fallback to local storage
-    try {
-      const { uploadAudioToSupabase } = await import('./supabase');
-      const result = await uploadAudioToSupabase(audioBuffer, filename);
-      
-      if (result.success && result.url) {
-        console.log('Voice uploaded to Supabase successfully');
-        return result.url;
-      }
-    } catch (supabaseError) {
-      console.warn('Supabase upload failed, falling back to local storage:', supabaseError);
-    }
-    
-    // Fallback to local storage
     const fs = await import('fs/promises');
     const path = await import('path');
-    
     const outputDir = path.join(process.cwd(), 'public', 'generated-videos');
     await fs.mkdir(outputDir, { recursive: true });
-    
     const outputPath = path.join(outputDir, filename);
     await fs.writeFile(outputPath, audioBuffer);
-    
-    const localUrl = `/generated-videos/${filename}`;
-    console.log('Voice saved locally:', localUrl);
-    return localUrl;
+    const publicUrl = `/generated-videos/${filename}`;
+    console.log('Voice saved locally:', publicUrl);
+    return { publicUrl, filePath: outputPath };
   } catch (error) {
     console.error('Error saving voice file:', error);
     throw error;
