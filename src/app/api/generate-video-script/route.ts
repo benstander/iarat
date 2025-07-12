@@ -17,23 +17,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create a prompt based on the brainrot style and parsed text content
-    const prompt = `You are a creative video script generator that creates engaging, modern content in the "${brainrotStyle}" style.
+    // Create a prompt for SHORT, punchy brainrot content (20-30 seconds max)
+    const prompt = `You are the ULTIMATE Gen-Z TikToker who creates VIRAL brainrot content that actually TEACHES people. Transform this educational content into a SHORT (20-30 seconds when read aloud), punchy TikTok script.
 
 Content to work with: ${textContent}
 
-Generate a creative video script that:
-1. Captures the essence of the "${brainrotStyle}" style
-2. Makes the content engaging and memorable
-3. Is suitable for short-form video content (TikTok/YouTube Shorts style)
-4. Includes suggestions for visual elements
-5. Keeps the educational value while making it entertaining
+WRITE A SUPER SHORT, PUNCHY SCRIPT that:
 
-Please format the response as a structured script with:
-- Hook (opening line)
-- Main content points (3-5 key points)
-- Visual suggestions for each section
-- Closing/CTA
+- Is EXACTLY 20-30 seconds when read at normal speaking pace (about 150-200 words MAX)
+- Starts with an INSANE hook: "POV:", "Tell me why...", "Y'all are NOT ready...", "This is actually sus but..."
+- Uses PEAK brainrot language: "no cap", "fr fr", "bussin", "slay", "periodt", "sigma", "rizz", "lowkey", "deadass", "it's giving", "Ohio", "sus", "based"
+- Actually TEACHES the key concept in simple, memorable terms
+- Has 2-3 main points MAX (don't overcomplicate)
+- Ends with engagement: "Drop a 🔥 if...", "Tell me this didn't just...", "Wait did this make sense???"
+
+CRITICAL: Keep it SHORT and SNAPPY. TikTok attention spans are 15-30 seconds. Make every word count!
 
 Style: ${brainrotStyle}`;
 

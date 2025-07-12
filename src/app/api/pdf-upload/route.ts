@@ -60,12 +60,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate PEAK BRAINROT script directly from extracted text
+    // Generate SHORT, PUNCHY BRAINROT script directly from extracted text
     const prompt = `You are the most unhinged Gen-Z TikToker who's actually SMART and teaches complex topics in pure brainrot language. Your job is to take this educational content and transform it into authentic Gen-Z/Gen-Alpha brainrot while making sure people ACTUALLY LEARN the key concepts.
 
 CONTENT TO TRANSFORM: ${extractedText}
 
-WRITE A NATURAL FLOWING EDUCATIONAL TIKTOK SCRIPT (30-45 seconds when read aloud) that:
+WRITE A SUPER SHORT, PUNCHY EDUCATIONAL TIKTOK SCRIPT (20-30 seconds when read aloud, 150-200 words MAX) that:
 
 - Starts with an absolutely UNHINGED hook like "POV:", "Tell me why...", "This is actually so sus but...", "Y'all are NOT ready for this...", "No cap this is about to blow your mind...", "Why is nobody talking about this???"
 

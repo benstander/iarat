@@ -22,7 +22,7 @@ export default function Home() {
   const [memeSfx, setMemeSfx] = useState(true)
   const [voiceover, setVoiceover] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedScript, setGeneratedScript] = useState("")
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState("")
 
   const handleSectionToggle = (section: 'pdf' | 'youtube' | 'notes') => {
     setActiveSection(activeSection === section ? null : section)
@@ -52,13 +52,17 @@ export default function Home() {
   }
 
   const processPDF = async (file: File) => {
+    if (!backgroundVideo) {
+      alert("Please select a background video first!")
+      return
+    }
+
     setIsGenerating(true)
-    setGeneratedScript("")
+    setGeneratedVideoUrl("")
     
     try {
       const formData = new FormData()
       formData.append('pdf', file)
-
 
       const response = await fetch('/api/pdf-upload', {
         method: 'POST',
@@ -70,13 +74,14 @@ export default function Home() {
       }
 
       const data = await response.json()
-      setGeneratedScript(data.script)
       console.log(`Successfully generated script from PDF: ${data.fileName} (${data.pageCount} pages)`)
+      
+      // Now generate the video with the script
+      await generateVideoWithScript(data.script)
     } catch (error) {
       console.error('Error processing PDF:', error)
       alert('Failed to process PDF. Please try again.')
       setUploadedFile(null)
-    } finally {
       setIsGenerating(false)
     }
   }
@@ -91,53 +96,91 @@ export default function Home() {
   }
 
   const handleYoutubeLinkProcess = async () => {
-    if (youtubeLink.trim()) {
-      setIsGenerating(true)
-      setGeneratedScript("")
-      
-      try {
-        // First transcribe the YouTube video
-        const transcribeResponse = await fetch('/api/youtube-transcribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            youtubeUrl: youtubeLink,
-          }),
-        })
+    if (!youtubeLink.trim()) {
+      alert("Please enter a YouTube URL!")
+      return
+    }
+    
+    if (!backgroundVideo) {
+      alert("Please select a background video first!")
+      return
+    }
 
-        if (!transcribeResponse.ok) {
-          throw new Error('Failed to transcribe YouTube video')
-        }
+    setIsGenerating(true)
+    setGeneratedVideoUrl("")
+    
+    try {
+      // First transcribe the YouTube video
+      const transcribeResponse = await fetch('/api/youtube-transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          youtubeUrl: youtubeLink,
+        }),
+      })
 
-        const transcribeData = await transcribeResponse.json()
-        console.log("Successfully transcribed YouTube video")
-
-        // Then generate script from transcript
-        const scriptResponse = await fetch('/api/generate-video-script', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            textContent: transcribeData.transcript,
-          }),
-        })
-
-        if (!scriptResponse.ok) {
-          throw new Error('Failed to generate script')
-        }
-
-        const scriptData = await scriptResponse.json()
-        setGeneratedScript(scriptData.script)
-        console.log("Successfully generated script from YouTube video")
-      } catch (error) {
-        console.error('Error processing YouTube video:', error)
-        alert('Failed to process YouTube video. Please check the URL and try again.')
-      } finally {
-        setIsGenerating(false)
+      if (!transcribeResponse.ok) {
+        throw new Error('Failed to transcribe YouTube video')
       }
+
+      const transcribeData = await transcribeResponse.json()
+      console.log("Successfully transcribed YouTube video")
+
+      // Then generate script from transcript
+      const scriptResponse = await fetch('/api/generate-video-script', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          textContent: transcribeData.transcript,
+        }),
+      })
+
+      if (!scriptResponse.ok) {
+        throw new Error('Failed to generate script')
+      }
+
+      const scriptData = await scriptResponse.json()
+      console.log("Successfully generated script from YouTube video")
+      
+      // Now generate the video with the script
+      await generateVideoWithScript(scriptData.script)
+    } catch (error) {
+      console.error('Error processing YouTube video:', error)
+      alert('Failed to process YouTube video. Please check the URL and try again.')
+      setIsGenerating(false)
+    }
+  }
+
+  const generateVideoWithScript = async (script: string) => {
+    try {
+      const response = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          script: script,
+          backgroundVideo: backgroundVideo === 'subway-surfers' ? 'subway' : 'minecraft',
+          voiceEnabled: voiceover,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate video')
+      }
+
+      const data = await response.json()
+      setGeneratedVideoUrl(data.videoUrl)
+      alert('Video generated successfully!')
+    } catch (error) {
+      console.error('Error generating video:', error)
+      alert('Failed to generate video. Please try again.')
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -147,8 +190,13 @@ export default function Home() {
       return
     }
 
+    if (!backgroundVideo) {
+      alert("Please select a background video first!")
+      return
+    }
+
     setIsGenerating(true)
-    setGeneratedScript("")
+    setGeneratedVideoUrl("")
 
     try {
       const response = await fetch('/api/generate-video-script', {
@@ -166,11 +214,13 @@ export default function Home() {
       }
 
       const data = await response.json()
-      setGeneratedScript(data.script)
+      console.log("Successfully generated script from notes")
+      
+      // Now generate the video with the script
+      await generateVideoWithScript(data.script)
     } catch (error) {
       console.error('Error generating video script:', error)
       alert('Failed to generate video script. Please try again.')
-    } finally {
       setIsGenerating(false)
     }
   }
@@ -334,10 +384,27 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Voice & Audio Section */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-black">Voice & Audio</Label>
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-[8px]">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="voiceover" className="text-sm font-medium text-black">
+                        AI Voiceover
+                      </Label>
+                    </div>
+                    <Switch
+                      id="voiceover"
+                      checked={voiceover}
+                      onCheckedChange={setVoiceover}
+                    />
+                  </div>
+                </div>
+
 
               </div>
 
-              {/* Generate Button - For all sections */}
+              {/* Generate Video Button - For all sections */}
               <div className="pt-4 border-t border-gray-200 mt-auto">
                 <Button
                   onClick={() => {
@@ -353,12 +420,13 @@ export default function Home() {
                   variant="purple"
                   disabled={
                     isGenerating || 
+                    !backgroundVideo ||
                     (activeSection === 'pdf' && !uploadedFile) ||
                     (activeSection === 'youtube' && !youtubeLink.trim()) ||
                     (activeSection === 'notes' && !parsedTextContent.trim())
                   }
                 >
-                  {isGenerating ? "Generating..." : "Generate Video"}
+                  {isGenerating ? "Generating Video..." : "Generate Brainrot Video"}
                 </Button>
               </div>
             </CardContent>
@@ -367,10 +435,57 @@ export default function Home() {
           {/* Right Column - iPhone Video Preview */}
           <div className="flex items-center justify-center">
             <div className="bg-gray-800 rounded-[2.5rem] p-4 w-80 h-[600px] shadow-2xl">
-              <div className="bg-black rounded-[2rem] w-full h-full flex items-center justify-center">
-                <p className="text-gray-400 text-center">
-                  {isGenerating ? "Generating Script..." : "Video Preview\nComing Soon"}
-                </p>
+              <div className="bg-black rounded-[2rem] w-full h-full flex items-center justify-center relative overflow-hidden">
+                {generatedVideoUrl ? (
+                  <div className="w-full h-full relative">
+                    <video
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      className="w-full h-full object-cover rounded-[2rem]"
+                      src={generatedVideoUrl}
+                      onError={(e) => {
+                        console.error('Video playback error:', e);
+                        // Fallback to show error message
+                      }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    {/* Success overlay */}
+                    <div className="absolute top-4 left-4 right-4">
+                      <div className="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium">
+                        ✅ Video Generated Successfully!
+                      </div>
+                    </div>
+                    {/* Download button */}
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <a
+                        href={generatedVideoUrl}
+                        download
+                        className="w-full bg-white text-black px-4 py-2 rounded-lg text-sm font-medium text-center block hover:bg-gray-100 transition-colors"
+                      >
+                        📥 Download Video
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-8">
+                    <p className="text-gray-400 text-center whitespace-pre-line text-lg">
+                      {isGenerating 
+                        ? "🔥 Creating Your\nBrainrot Video...\n\n⚡ This might take a few minutes" 
+                        : "📱 Upload content &\nselect background to\nget started"}
+                    </p>
+                    {isGenerating && (
+                      <div className="mt-6 space-y-3">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+                        <div className="text-sm text-gray-500">
+                          Generating voice... Rendering video...
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
