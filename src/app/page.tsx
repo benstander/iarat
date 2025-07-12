@@ -404,14 +404,14 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-20 pl-30 overflow-hidden">
+    <div className="min-h-screen bg-white text-black pt-20 pb-20 pl-30 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {/* Left Column - Upload and Style Section */}
         <Card className="rounded-2xl shadow-2xl border border-gray-200 bg-white text-black h-[660px] flex flex-col overflow-hidden">
             <CardHeader className="flex-shrink-0">
-              <CardTitle className="text-2xl font-bold text-black flex items-center gap-3">
+              <CardTitle className="text-xl font-bold text-black flex items-center gap-3">
                 {viewMode === 'topics' ? (
                   <>
                     <Button
@@ -422,12 +422,11 @@ export default function Home() {
                     >
                       ←
                     </Button>
-                    <StickyNote className="h-6 w-6" />
                     Select Topic to Generate
                   </>
                 ) : (
                   <>
-                    Turn your notes into brainrot
+                    Turn your notes into <span className="font-bold text-pink-500">brainrot</span>
                   </>
                 )}
               </CardTitle>
@@ -447,9 +446,9 @@ export default function Home() {
                           key={index} 
                           className={`p-4 rounded-lg transition-all duration-200 cursor-pointer ${
                             isGenerated 
-                              ? 'bg-green-50 border-2 border-green-300' 
+                              ? 'bg-pink-50 border-2 border-pink-300' // changed from green to pink
                               : isSelected 
-                                ? 'bg-gray-100 border-2 border-black' 
+                                ? 'bg-gray-100 border-2 border-pink-500' 
                                 : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300'
                           }`}
                           onClick={() => {
@@ -467,7 +466,7 @@ export default function Home() {
                               {isGenerated ? (
                                 <></>
                               ) : isSelected ? (
-                                <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
+                                <div className="w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
                                   <div className="w-2 h-2 bg-white rounded-full"></div>
                                 </div>
                               ) : (
@@ -485,7 +484,7 @@ export default function Home() {
                     <Button
                       onClick={generateVideosForSelectedTopics}
                       disabled={isGeneratingVideos || selectedTopics.size === 0}
-                      className="w-full h-14 rounded-[8px] font-semibold text-md bg-black text-white hover:bg-gray-900 disabled:bg-black disabled:text-white disabled:opacity-60"
+                      className={`w-full h-14 rounded-[8px] font-semibold text-md text-white bg-pink-500 hover:bg-pink-600 disabled:bg-pink-500 disabled:text-white`}
                     >
                       {isGeneratingVideos ? 
                         "Generating Videos..." : 
@@ -555,7 +554,7 @@ export default function Home() {
                               dragActive
                                 ? "border-black bg-gray-100"
                                 : uploadedFile
-                                  ? "border-green-400 bg-green-100"
+                                  ? "border-pink-500 bg-pink-100"
                                   : "border-gray-300 hover:border-gray-400 hover:bg-gray-100"
                             }`}
                             onDragEnter={handleDrag}
@@ -566,7 +565,7 @@ export default function Home() {
                           >
                             <Input id="file-upload" type="file" accept=".pdf" onChange={handleFileChange} className="hidden" />
                             {uploadedFile ? (
-                              <div className="flex items-center justify-center gap-2 text-green-700">
+                              <div className="flex items-center justify-center gap-2 text-pink-700">
                                 <FileText className="h-6 w-6" />
                                 <span className="font-medium">{uploadedFile.name}</span>
                               </div>
@@ -676,7 +675,7 @@ export default function Home() {
                           handleGenerate()
                         }
                       }}
-                      className="w-full h-14 rounded-[8px] font-semibold text-md bg-black text-white hover:bg-gray-900 disabled:bg-black disabled:text-white disabled:opacity-60"
+                      className={`w-full h-14 rounded-[8px] font-semibold text-md text-white bg-pink-500 hover:bg-pink-600 disabled:bg-pink-500 disabled:text-white`}
                       disabled={
                         isGenerating || 
                         !backgroundVideo ||
@@ -761,7 +760,8 @@ export default function Home() {
                     loop
                     muted
                     playsInline
-                    src={"https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/background-videos/landing%20page/video_1752314200708_topic4.mp4"}
+                    //src={"https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/background-videos/landing%20page/video_1752314200708_topic4.mp4"}
+                    src={"https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/generated-videos//video_1752327164073_topic3.mp4"}
                   >
                     Your browser does not support the video tag.
                   </video>
