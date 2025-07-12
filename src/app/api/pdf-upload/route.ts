@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { openai } from '@ai-sdk/openai';
-import { xai } from '@ai-sdk/xai';
 import { generateText } from 'ai';
 
-export const maxDuration = 30;
+export const maxDuration = 60; // Increased for multiple topic processing
+
+// Helper function to clean JSON response from markdown
+function cleanJsonResponse(text: string): string {
+  // Remove markdown code blocks if present
+  const cleaned = text.replace(/```json\s*|\s*```/g, '').trim();
+  return cleaned;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,85 +31,123 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Convert file to buffer
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // Extract text from PDF
+    const arrayBuffer = await file.arrayBuffer();
+    const pdfParse = require('pdf-parse');
+    const pdfData = await pdfParse(Buffer.from(arrayBuffer));
+    const extractedText = pdfData.text;
 
-    // Parse PDF using pdf-parse (server-side compatible)
-    let extractedText: string;
-    let pageCount: number;
-    
-    try {
-      // Import pdf-parse in a way that works with Next.js API routes
-      const pdfParse = (await import('pdf-parse')).default;
-      
-      // Parse the PDF buffer
-      const data = await pdfParse(buffer, {
-        // Options to make it work better in server environment
-        max: 0, // No limit on pages
-      });
-      
-      extractedText = data.text;
-      pageCount = data.numpages;
-      
-    } catch (error) {
-      console.error('PDF parsing error:', error);
-      return NextResponse.json(
-        { error: 'Failed to parse PDF. Please ensure the PDF contains readable text and is not corrupted.' },
-        { status: 400 }
-      );
-    }
+    console.log('Extracted text length:', extractedText.length);
 
-    if (!extractedText.trim()) {
+    if (!extractedText || extractedText.trim().length === 0) {
       return NextResponse.json(
         { error: 'No text could be extracted from the PDF' },
         { status: 400 }
       );
     }
 
-    // Generate SHORT, PUNCHY BRAINROT script directly from extracted text
-    const prompt = `You are the most unhinged Gen-Z TikToker who's actually SMART and teaches complex topics in pure brainrot language. Your job is to take this educational content and transform it into authentic Gen-Z/Gen-Alpha brainrot while making sure people ACTUALLY LEARN the key concepts.
-
-CONTENT TO TRANSFORM: ${extractedText}
-
-WRITE A SUPER SHORT, PUNCHY EDUCATIONAL TIKTOK SCRIPT (20-30 seconds when read aloud, 150-200 words MAX) that:
-
-- Starts with an absolutely UNHINGED hook like "POV:", "Tell me why...", "This is actually so sus but...", "Y'all are NOT ready for this...", "No cap this is about to blow your mind...", "Why is nobody talking about this???"
-
-- ACTUALLY EXPLAINS the key concepts, facts, and important information from the content BUT uses Gen-Z brainrot language: "no cap", "fr fr", "bussin", "slay", "periodt", "Ohio", "sus", "based", "cringe", "bet", "slaps", "goes hard", "it's giving", "that's so sigma", "alpha energy", "rizz", "lowkey", "highkey", "deadass", "and I oop", "that hits different", "it's the [X] for me"
-
-- Makes sure viewers understand the ACTUAL educational content - break down complex ideas into simple brainrot explanations that people will remember
-
-- Use analogies and comparisons that Gen-Z relates to: "It's like when your phone dies but worse", "This hits different than your ex's apology", "It's giving main character energy", "Think of it like this but make it make sense"
-
-- Talks like you're explaining it to your bestie with ADHD energy - random capitalization, multiple exclamation points, dramatic pauses with "..." BUT ACTUALLY TEACHES THEM
-
-- Makes the educational content SHOCKING and mind-blowing - "WAIT WHAT?!", "I'm literally SHOOK", "This is so unhinged but it's FACTS"
-
-- Ends with something that reinforces the learning and makes people want to comment like "Tell me you learned something new", "This is actually insane right??? Did y'all know this?", "Drop a 🔥 if this just changed your whole perspective", "Wait did this just make [subject] make sense for anyone else???"
-
-CRITICAL: The viewer should walk away having actually LEARNED the key educational concepts from the original content. Don't sacrifice educational value for entertainment - combine both! Make learning addictive.
-
-Don't use any structured format or labels. Just write it like you're literally talking to your phone making an educational TikTok that's both unhinged AND informative.
-
-Style vibe: ${brainrotStyle}`;
-
-    const { text } = await generateText({
-      model: openai('gpt-4.1'),
-      prompt: prompt,
-      maxTokens: 1200,
-      temperature: 0.9, 
+    // Step 1: Split text into topics using ChatGPT
+    console.log('Splitting text into topics...');
+    const topicsResult = await generateText({
+      model: openai('gpt-4o'),
+      prompt: `
+        Split the following text into 3-7 distinct topics or sections. 
+        Each topic should have a clear title and contain the relevant content from the original text.
+        
+        Return ONLY a valid JSON array in this exact format:
+        [
+          {
+            "title": "Topic Title",
+            "content": "Relevant content from the original text for this topic"
+          }
+        ]
+        
+        Text to analyze:
+        ${extractedText}
+      `,
+      maxTokens: 2000,
     });
-    console.log(text);
+
+    const topicsJson = topicsResult.text;
+    console.log('Raw topics response:', topicsJson);
+
+    // Parse topics with improved error handling
+    let topics;
+    try {
+      const cleanedJson = cleanJsonResponse(topicsJson);
+      topics = JSON.parse(cleanedJson);
+    } catch (parseError) {
+      console.error('Failed to parse topics JSON:', parseError);
+      console.log('Cleaned topics response:', cleanJsonResponse(topicsJson));
+      
+      // Fallback: treat entire text as one topic
+      topics = [{
+        title: "Document Summary",
+        content: extractedText.substring(0, 2000) // Limit content length
+      }];
+    }
+
+    if (!Array.isArray(topics) || topics.length === 0) {
+      return NextResponse.json(
+        { error: 'Failed to split text into topics' },
+        { status: 500 }
+      );
+    }
+
+    console.log(`Successfully split into ${topics.length} topics`);
+
+    // Step 2: Generate brainrot summaries for each topic
+    const summaries = [];
+    
+    for (let i = 0; i < topics.length; i++) {
+      const topic = topics[i];
+      console.log(`Generating brainrot summary for topic ${i + 1}: ${topic.title}`);
+      
+      try {
+        const summaryResult = await generateText({
+          model: openai('gpt-4o'),
+          prompt: `
+            Create a ${brainrotStyle} brainrot-style summary of the following topic that will be exactly 30 seconds when spoken (about 75 words).
+            
+            Use Gen-Z language, viral TikTok style, and make it engaging and fun while keeping the core information.
+            Examples of brainrot style: "No cap", "It's giving...", "That's lowkey fire", "This is actually insane", etc.
+            
+            Topic: ${topic.title}
+            Content: ${topic.content}
+            
+            Return ONLY the script text, nothing else:
+          `,
+          maxTokens: 200,
+        });
+
+        summaries.push({
+          topicTitle: topic.title,
+          script: summaryResult.text.trim(),
+          topicIndex: i + 1
+        });
+        
+      } catch (summaryError) {
+        console.error(`Error generating summary for topic ${i + 1}:`, summaryError);
+        // Add a fallback summary
+        summaries.push({
+          topicTitle: topic.title,
+          script: `This topic covers ${topic.title}. ${topic.content.substring(0, 150)}...`,
+          topicIndex: i + 1
+        });
+      }
+    }
+
+    console.log(`Generated ${summaries.length} brainrot summaries`);
 
     return NextResponse.json({
       success: true,
-      script: text,
-      fileName: file.name,
-      pageCount: pageCount
+      summaries,
+      totalTopics: summaries.length,
+      message: `Successfully processed PDF and created ${summaries.length} topic summaries`
     });
 
   } catch (error) {
-    console.error('Error processing PDF:', error);
+    console.error('PDF processing error:', error);
     return NextResponse.json(
       { error: 'Failed to process PDF file' },
       { status: 500 }

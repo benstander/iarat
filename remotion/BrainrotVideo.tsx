@@ -4,7 +4,7 @@ import { Captions } from './Captions';
 
 export interface BrainrotVideoProps {
   script: string;
-  backgroundVideo: 'minecraft' | 'subway';
+  backgroundVideo: string; // Now accepts URLs or 'minecraft'/'subway'
   voiceAudio: string;
 }
 
@@ -16,22 +16,37 @@ export const BrainrotVideo: React.FC<BrainrotVideoProps> = ({
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
 
-  // Background video files
-  const backgroundVideoFiles = {
-    minecraft: ['mp1.mp4', 'mp2.mp4', 'mp3.mp4', 'mp4.mp4', 'mp5.mp4'],
-    subway: ['ss1.mp4', 'ss2.mp4', 'ss3.mp4', 'ss4.mp4', 'ss5.mp4']
-  };
+  // Calculate actual duration in seconds from the video config
+  const durationInSeconds = durationInFrames / fps;
 
-  // Select a random background video
-  const videoFiles = backgroundVideoFiles[backgroundVideo];
-  const selectedVideo = videoFiles[Math.floor(Math.random() * videoFiles.length)];
-  const videoPath = staticFile(`videos/${backgroundVideo}/${selectedVideo}`);
+  // Determine video source
+  let videoSrc: string;
+  
+  if (backgroundVideo.startsWith('http')) {
+    // Direct URL (Supabase or external)
+    videoSrc = backgroundVideo;
+  } else {
+    // Legacy local video system
+    const backgroundVideoFiles = {
+      minecraft: ['mp1.mp4', 'mp2.mp4', 'mp3.mp4', 'mp4.mp4', 'mp5.mp4'],
+      subway: ['ss1.mp4', 'ss2.mp4', 'ss3.mp4', 'ss4.mp4', 'ss5.mp4']
+    };
+
+    const videoFiles = backgroundVideoFiles[backgroundVideo as keyof typeof backgroundVideoFiles];
+    if (videoFiles) {
+      const selectedVideo = videoFiles[Math.floor(Math.random() * videoFiles.length)];
+      videoSrc = staticFile(`videos/${backgroundVideo}/${selectedVideo}`);
+    } else {
+      // Fallback to a default video
+      videoSrc = staticFile('videos/minecraft/mp1.mp4');
+    }
+  }
 
   return (
     <AbsoluteFill style={{ backgroundColor: 'black' }}>
       {/* Background Video */}
       <Video
-        src={videoPath}
+        src={videoSrc}
         style={{
           width: '100%',
           height: '100%',
@@ -56,6 +71,7 @@ export const BrainrotVideo: React.FC<BrainrotVideoProps> = ({
         frame={frame}
         fps={fps}
         durationInFrames={durationInFrames}
+        durationInSeconds={durationInSeconds}
       />
     </AbsoluteFill>
   );

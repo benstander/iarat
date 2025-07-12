@@ -6,21 +6,26 @@ export interface CaptionsProps {
   frame: number;
   fps: number;
   durationInFrames: number;
+  durationInSeconds: number;
 }
 
 export const Captions: React.FC<CaptionsProps> = ({ 
   script, 
   frame, 
   fps, 
-  durationInFrames 
+  durationInFrames,
+  durationInSeconds
 }) => {
   const { width, height } = useVideoConfig();
 
   // Split script into sentences/phrases for timed captions
   const sentences = script.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  
+  // Use actual audio duration for better timing
   const framesPerSentence = Math.floor(durationInFrames / sentences.length);
+  const secondsPerSentence = durationInSeconds / sentences.length;
 
-  // Current sentence index
+  // Current sentence index based on actual timing
   const currentSentenceIndex = Math.floor(frame / framesPerSentence);
   const currentSentence = sentences[currentSentenceIndex] || '';
 
@@ -53,11 +58,6 @@ export const Captions: React.FC<CaptionsProps> = ({
         style={{
           transform: `scale(${scale})`,
           opacity,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          padding: '20px 30px',
-          borderRadius: '15px',
-          border: '3px solid #00ff00',
-          boxShadow: '0 0 20px rgba(0, 255, 0, 0.5)',
         }}
       >
         <div
@@ -66,7 +66,6 @@ export const Captions: React.FC<CaptionsProps> = ({
             fontWeight: 'bold',
             color: '#ffffff',
             textAlign: 'center',
-            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)',
             fontFamily: 'Arial, sans-serif',
             lineHeight: '1.2',
             maxWidth: `${width * 0.8}px`,
