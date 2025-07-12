@@ -129,6 +129,7 @@ async function generateSingleVideo({
   }
 
   // Generate voice audio if enabled
+  let wordTimestamps: any[] | undefined;
   if (voiceEnabled) {
     try {
       console.log('Generating voice audio...');
@@ -138,6 +139,14 @@ async function generateSingleVideo({
       const audioFilename = `voice_${Date.now()}_${topicIndex || 'single'}.mp3`;
       voiceAudioUrl = await saveVoiceToFile(voiceResult.audioBuffer, audioFilename);
       audioDurationInSeconds = voiceResult.durationInSeconds;
+      
+      // Capture word timestamps for precise caption timing
+      if (voiceResult.wordTimestamps && voiceResult.wordTimestamps.length > 0) {
+        wordTimestamps = voiceResult.wordTimestamps;
+        console.log(`Captured ${wordTimestamps.length} word timestamps from ElevenLabs`);
+      } else {
+        console.log('No word timestamps available from ElevenLabs');
+      }
       
       console.log('Voice audio saved:', voiceAudioUrl);
       console.log('Audio duration:', audioDurationInSeconds, 'seconds');
@@ -199,7 +208,8 @@ async function generateSingleVideo({
       backgroundVideo: bgVideoUrl || backgroundVideo,
       voiceAudio: voiceAudioUrl, // voiceAudioUrl is already a complete URL from Supabase
       audioDurationInSeconds: finalDuration,
-      outputPath
+      outputPath,
+      wordTimestamps // Pass ElevenLabs word timestamps for precise caption timing
     });
   } catch (renderError) {
     console.error('FFmpeg render failed:', renderError);

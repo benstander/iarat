@@ -6,12 +6,26 @@ export interface VoiceGenerationOptions {
   maxDurationSeconds?: number;
 }
 
+export interface CharacterTimestamp {
+  character: string;
+  startTime: number;
+  endTime: number;
+}
+
+export interface WordTimestamp {
+  word: string;
+  startTime: number;
+  endTime: number;
+}
+
 export interface VoiceGenerationResult {
   audioBuffer: Buffer;
   durationInSeconds: number;
   wordCount: number;
   estimatedDuration: number;
   actualDuration: number;
+  characterTimestamps?: CharacterTimestamp[];
+  wordTimestamps?: WordTimestamp[];
 }
 
 // ElevenLabs speaking rate constants (aligned with script-generation.ts)
@@ -191,6 +205,65 @@ function validateTextForVoice(text: string, maxDurationSeconds: number = MAX_VOI
   return result;
 }
 
+/**
+ * Convert character-level timestamps to word-level timestamps
+ */
+function convertCharacterTimestampsToWords(
+  text: string, 
+  characterTimestamps: CharacterTimestamp[]
+): WordTimestamp[] {
+  const words: WordTimestamp[] = [];
+  const textChars = text.split('');
+  
+  let currentWord = '';
+  let wordStartIndex = -1;
+  let charIndex = 0;
+  
+  for (let i = 0; i < textChars.length; i++) {
+    const char = textChars[i];
+    
+    if (char.match(/\s/)) {
+      // End of word
+      if (currentWord.trim().length > 0 && wordStartIndex >= 0) {
+        const wordEndIndex = i - 1;
+        const startTime = characterTimestamps[wordStartIndex]?.startTime || 0;
+        const endTime = characterTimestamps[wordEndIndex]?.endTime || 0;
+        
+        words.push({
+          word: currentWord.trim(),
+          startTime,
+          endTime,
+        });
+      }
+      
+      currentWord = '';
+      wordStartIndex = -1;
+    } else {
+      // Building a word
+      if (currentWord === '') {
+        wordStartIndex = i;
+      }
+      currentWord += char;
+    }
+  }
+  
+  // Handle the last word if text doesn't end with whitespace
+  if (currentWord.trim().length > 0 && wordStartIndex >= 0) {
+    const wordEndIndex = textChars.length - 1;
+    const startTime = characterTimestamps[wordStartIndex]?.startTime || 0;
+    const endTime = characterTimestamps[wordEndIndex]?.endTime || 0;
+    
+    words.push({
+      word: currentWord.trim(),
+      startTime,
+      endTime,
+    });
+  }
+  
+  console.log(`Converted ${characterTimestamps.length} character timestamps to ${words.length} word timestamps`);
+  return words;
+}
+
 export async function generateVoice(options: VoiceGenerationOptions): Promise<VoiceGenerationResult> {
   try {
     let { text, maxDurationSeconds = MAX_VOICE_DURATION_SECONDS } = options;
@@ -198,7 +271,7 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
     // Enforce absolute maximum
     maxDurationSeconds = Math.min(maxDurationSeconds, MAX_VOICE_DURATION_SECONDS);
     
-    console.log('Generating voice with Eleven Labs...');
+    console.log('Generating voice with Eleven Labs (with timing data)...');
     console.log(`Text length: ${text.length} characters`);
     console.log(`Word count: ${text.trim().split(/\s+/).length} words`);
     console.log(`Max duration: ${maxDurationSeconds}s`);
@@ -222,11 +295,12 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
     const finalWordCount = text.trim().split(/\s+/).length;
     const estimatedDuration = finalWordCount / ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND;
     
-    // Make direct API call to ElevenLabs
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB`, {
+    // Make API call to ElevenLabs with timing data
+    console.log('Calling ElevenLabs with-timestamps endpoint...');
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB/with-timestamps`, {
       method: 'POST',
       headers: {
-        'Accept': 'audio/mpeg',
+        'Accept': 'application/json',
         'Content-Type': 'application/json',
         'xi-api-key': process.env.ELEVENLABS_API_KEY || '',
       },
@@ -246,9 +320,55 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
       throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText}: ${errorText}`);
     }
 
-    console.log('Voice generation successful, processing audio...');
-    const audioBuffer = Buffer.from(await response.arrayBuffer());
+    console.log('Voice generation with timing successful, processing response...');
+    const responseData = await response.json();
+    
+    // Extract audio and timing data
+    const audioBase64 = responseData.audio_base64;
+    const alignment = responseData.alignment;
+    
+    if (!audioBase64) {
+      throw new Error('No audio data received from ElevenLabs');
+    }
+    
+    // Convert base64 audio to buffer
+    const audioBuffer = Buffer.from(audioBase64, 'base64');
     console.log('Audio buffer size:', audioBuffer.length, 'bytes');
+    
+    // Process character timestamps if available
+    let characterTimestamps: CharacterTimestamp[] = [];
+    let wordTimestamps: WordTimestamp[] = [];
+    
+    if (alignment && alignment.characters && alignment.character_start_times_seconds && alignment.character_end_times_seconds) {
+      console.log('Processing character-level timing data...');
+      
+      const characters = alignment.characters;
+      const startTimes = alignment.character_start_times_seconds;
+      const endTimes = alignment.character_end_times_seconds;
+      
+      // Create character timestamps
+      for (let i = 0; i < characters.length; i++) {
+        characterTimestamps.push({
+          character: characters[i],
+          startTime: startTimes[i],
+          endTime: endTimes[i],
+        });
+      }
+      
+      console.log(`Processed ${characterTimestamps.length} character timestamps`);
+      
+      // Convert to word timestamps
+      wordTimestamps = convertCharacterTimestampsToWords(text, characterTimestamps);
+      console.log(`Generated ${wordTimestamps.length} word timestamps`);
+      
+      // Log sample word timestamps
+      console.log('Sample word timestamps:');
+      wordTimestamps.slice(0, 10).forEach((wt, i) => {
+        console.log(`  ${i + 1}. "${wt.word}" [${wt.startTime.toFixed(2)}s - ${wt.endTime.toFixed(2)}s]`);
+      });
+    } else {
+      console.warn('No timing data received from ElevenLabs, timing features will be limited');
+    }
     
     // Get actual audio duration
     console.log('Getting actual audio duration...');
@@ -259,13 +379,17 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
       console.log(`  - Estimated duration: ${estimatedDuration.toFixed(1)}s`);
       console.log(`  - Actual duration: ${actualDuration.toFixed(1)}s`);
       console.log(`  - Duration accuracy: ${((actualDuration / estimatedDuration) * 100).toFixed(1)}%`);
+      console.log(`  - Character timestamps: ${characterTimestamps.length}`);
+      console.log(`  - Word timestamps: ${wordTimestamps.length}`);
       
       return {
         audioBuffer,
         durationInSeconds: actualDuration,
         wordCount: finalWordCount,
         estimatedDuration: estimatedDuration,
-        actualDuration: actualDuration
+        actualDuration: actualDuration,
+        characterTimestamps: characterTimestamps.length > 0 ? characterTimestamps : undefined,
+        wordTimestamps: wordTimestamps.length > 0 ? wordTimestamps : undefined,
       };
     } catch (durationError) {
       console.error('Failed to get actual duration, using estimation:', durationError);
@@ -277,7 +401,9 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
         durationInSeconds: fallbackDuration,
         wordCount: finalWordCount,
         estimatedDuration: estimatedDuration,
-        actualDuration: fallbackDuration
+        actualDuration: fallbackDuration,
+        characterTimestamps: characterTimestamps.length > 0 ? characterTimestamps : undefined,
+        wordTimestamps: wordTimestamps.length > 0 ? wordTimestamps : undefined,
       };
     }
   } catch (error) {
