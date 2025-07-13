@@ -12,6 +12,12 @@ export const maxDuration = 300; // 5 minutes for video generation
 const MAX_VIDEO_DURATION_SECONDS = 60; // Absolute maximum: 1 minute
 const FALLBACK_DURATION_SECONDS = 20;  // For text-only videos
 
+// Utility: Replace 'fr' with 'for real' for TTS (standalone word, case-insensitive)
+function replaceFrWithForReal(text: string): string {
+  // Replace 'fr' as a standalone word (case-insensitive) with 'for real'
+  return text.replace(/\bfr\b/gi, 'for real');
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -133,10 +139,13 @@ async function generateSingleVideo({
   let wordTimestamps: any[] | undefined;
   if (voiceEnabled) {
     try {
+      // Use TTS-specific script for voiceover (replace 'fr' with 'for real')
+      const ttsScript = replaceFrWithForReal(script);
       console.log('Generating voice audio...');
-      console.log(`Script length: ${script.length} characters, ${script.trim().split(/\s+/).length} words`);
+      console.log(`TTS Script:`, ttsScript);
+      console.log(`Script length: ${ttsScript.length} characters, ${ttsScript.trim().split(/\s+/).length} words`);
       
-      const voiceResult = await generateVoice({ text: script });
+      const voiceResult = await generateVoice({ text: ttsScript });
       const audioFilename = `voice_${Date.now()}_${topicIndex || 'single'}.mp3`;
       const { publicUrl: voiceAudioUrlPublic, filePath: voiceAudioFilePathResult } = await saveVoiceToFile(voiceResult.audioBuffer, audioFilename);
       voiceAudioUrl = voiceAudioUrlPublic;
