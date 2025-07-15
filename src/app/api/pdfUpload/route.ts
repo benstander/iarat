@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openai } from '@ai-sdk/openai';
-import { generateText } from 'ai';
-import { generateVideoScript } from '@/lib/script-generation';
+import { processTextIntoTopics } from '@/lib/topic-processing';
 
 export const maxDuration = 60; // Increased for multiple topic processing
-
-// Helper function to clean JSON response from markdown
-function cleanJsonResponse(text: string): string {
-  // Remove markdown code blocks if present
-  const cleaned = text.replace(/```json\s*|\s*```/g, '').trim();
-  return cleaned;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -56,88 +47,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Step 1: Split text into topics using ChatGPT
-    console.log('Splitting text into topics...');
-    const topicsResult = await generateText({
-      model: openai('gpt-4o'),
-      prompt: `
-        Split the following text into 3-7 distinct topics or sections. 
-        Each topic should have a clear title and contain the relevant content from the original text.
-        
-        Return ONLY a valid JSON array in this exact format:
-        [
-          {
-            "title": "Topic Title",
-            "content": "Relevant content from the original text for this topic"
-          }
-        ]
-        
-        Text to analyze:
-        ${extractedText}
-      `,
-      maxTokens: 2000,
+    // Process text into topics and generate scripts using shared utility
+    const summaries = await processTextIntoTopics({
+      textContent: extractedText,
+      brainrotStyle,
+      contentType: 'PDF'
     });
-
-    const topicsJson = topicsResult.text;
-    console.log('Raw topics response:', topicsJson);
-
-    // Parse topics with improved error handling
-    let topics;
-    try {
-      const cleanedJson = cleanJsonResponse(topicsJson);
-      topics = JSON.parse(cleanedJson);
-    } catch (parseError) {
-      console.error('Failed to parse topics JSON:', parseError);
-      console.log('Cleaned topics response:', cleanJsonResponse(topicsJson));
-      
-      // Fallback: treat entire text as one topic
-      topics = [{
-        title: "Document Summary",
-        content: extractedText.substring(0, 2000) // Limit content length
-      }];
-    }
-
-    if (!Array.isArray(topics) || topics.length === 0) {
-      return NextResponse.json(
-        { error: 'Failed to split text into topics' },
-        { status: 500 }
-      );
-    }
-
-    console.log(`Successfully split into ${topics.length} topics`);
-
-    // Step 2: Generate scripts for each topic using the shared utility
-    const summaries = [];
-    
-    for (let i = 0; i < topics.length; i++) {
-      const topic = topics[i];
-      console.log(`Generating script for topic ${i + 1}: ${topic.title}`);
-      
-      try {
-        // Use the shared script generation utility
-        const script = await generateVideoScript({
-          textContent: `${topic.title}: ${topic.content}`,
-          brainrotStyle
-        });
-
-        summaries.push({
-          topicTitle: topic.title,
-          script: script,
-          topicIndex: i + 1
-        });
-        
-      } catch (scriptError) {
-        console.error(`Error generating script for topic ${i + 1}:`, scriptError);
-        // Add a fallback summary
-        summaries.push({
-          topicTitle: topic.title,
-          script: `This topic covers ${topic.title}. ${topic.content.substring(0, 150)}...`,
-          topicIndex: i + 1
-        });
-      }
-    }
-
-    console.log(`Generated ${summaries.length} brainrot summaries`);
 
     return NextResponse.json({
       success: true,
