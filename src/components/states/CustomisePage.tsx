@@ -26,26 +26,28 @@ export default function CustomisePage({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
       {/* Left Column */}
-      <div className="space-y-8">
-        <h2 className="text-4xl font-bold">Customise Reels</h2>
-        
+      <div className="pl-16 flex flex-col justify-between min-h-[540px] h-[540px]">
         <div className="space-y-8">
           {/* Video Format */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-semibold">Video Format</h3>
-            <div className="flex gap-4">
-              {(['summary', 'splitscreen', 'quiz'] as const).map((format) => (
+            <h3 className="text-lg font-semibold">Video Format</h3>
+            <div className="flex gap-4 w-full">
+              {([
+                { value: 'summary', label: 'Summary' },
+                { value: 'splitscreen', label: 'Split Screen' },
+                { value: 'quiz', label: 'Quiz' }
+              ] as const).map(({ value, label }) => (
                 <Button
-                  key={format}
-                  onClick={() => setVideoFormat(format)}
-                  variant={videoFormat === format ? "default" : "outline"}
-                  className={`px-6 py-3 rounded-full capitalize ${
-                    videoFormat === format
-                      ? 'bg-pink-500 text-white border-pink-500'
-                      : 'border-2 border-gray-300 text-gray-700 hover:border-gray-400'
+                  key={value}
+                  onClick={() => setVideoFormat(videoFormat === value ? null : value)}
+                  variant="outline"
+                  className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border-2 ${
+                    videoFormat === value
+                      ? 'border-pink-500'
+                      : 'border-black'
                   }`}
                 >
-                  {format === 'splitscreen' ? 'Split Screen' : format}
+                  {label}
                 </Button>
               ))}
             </div>
@@ -53,17 +55,17 @@ export default function CustomisePage({
 
           {/* Background video */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-semibold">Background video</h3>
-            <div className="flex gap-4">
+            <h3 className="text-lg font-semibold">Background video</h3>
+            <div className="flex gap-4 w-full">
               {(['minecraft', 'subway', 'characters'] as const).map((bg) => (
                 <Button
                   key={bg}
-                  onClick={() => setBackgroundVideo(bg)}
-                  variant={backgroundVideo === bg ? "default" : "outline"}
-                  className={`px-6 py-3 rounded-full capitalize ${
+                  onClick={() => setBackgroundVideo(backgroundVideo === bg ? null : bg)}
+                  variant="outline"
+                  className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border-2 capitalize ${
                     backgroundVideo === bg
-                      ? 'bg-pink-500 text-white border-pink-500'
-                      : 'border-2 border-gray-300 text-gray-700 hover:border-gray-400'
+                      ? 'border-pink-500'
+                      : 'border-black'
                   }`}
                 >
                   {bg === 'minecraft' ? 'Minecraft Parkour' : 
@@ -75,17 +77,17 @@ export default function CustomisePage({
 
           {/* Video style */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-semibold">Video style</h3>
-            <div className="flex gap-4">
-              {(['brainrot', 'academic', 'unhinged'] as const).map((style) => (
+            <h3 className="text-lg font-semibold">Video style</h3>
+            <div className="flex gap-4 w-full">
+              {(['academic', 'brainrot', 'unhinged'] as const).map((style) => (
                 <Button
                   key={style}
-                  onClick={() => setVideoStyle(style)}
-                  variant={videoStyle === style ? "default" : "outline"}
-                  className={`px-6 py-3 rounded-full capitalize ${
+                  onClick={() => setVideoStyle(videoStyle === style ? null : style)}
+                  variant="outline"
+                  className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border-2 capitalize ${
                     videoStyle === style
-                      ? 'bg-pink-500 text-white border-pink-500'
-                      : 'border-2 border-gray-300 text-gray-700 hover:border-gray-400'
+                      ? 'border-pink-500'
+                      : 'border-black'
                   }`}
                 >
                   {style}
@@ -94,19 +96,19 @@ export default function CustomisePage({
             </div>
           </div>
 
-          <Button
-            onClick={generateReel}
-            disabled={isProcessing}
-            className="w-full py-4 text-lg font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-600 text-white hover:from-pink-500 hover:to-pink-700 disabled:opacity-50"
-          >
-            {isProcessing ? "Generating Reel..." : "Generate Reel"}
-          </Button>
         </div>
+        <Button
+          onClick={generateReel}
+          disabled={isProcessing}
+          className="w-full py-7 text-md font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-600 text-white hover:from-pink-500 hover:to-pink-700 disabled:opacity-50"
+        >
+          {isProcessing ? "Generating Reel..." : "Generate Reel"}
+        </Button>
       </div>
 
       {/* Right Column - Video Preview */}
-      <div className="flex justify-center">
-        <div className="w-80 h-[500px] rounded-2xl overflow-hidden shadow-2xl">
+      <div className="flex justify-end pr-16">
+        <div className="w-74 h-[540px] rounded-2xl overflow-hidden shadow-2xl">
           <video
             className="w-full h-full object-cover"
             autoPlay

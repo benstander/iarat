@@ -21,7 +21,7 @@ export default function LandingPage({
   isProcessing
 }: LandingPageProps) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[70vh]">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[66vh]">
       {/* Left Column */}
       <div className="space-y-30 pl-16">
         <div className="gap-6 flex flex-col">
@@ -35,13 +35,15 @@ export default function LandingPage({
         </div>
 
         <div className="space-y-4">
-          {/* File Upload Display */}
-          {uploadedFile && (
-            <div className="bg-gray-50 border rounded-full px-6 py-4 inline-flex items-center gap-4">
-              <FileText className="w-4 h-4 text-gray-600" />
-              <span className="text-gray-700 text-sm font-medium">{uploadedFile.name}</span>
-            </div>
-          )}
+          {/* File Upload Display (fixed height to prevent layout shift) */}
+          <div style={{ minHeight: 42 }}>
+            {uploadedFile ? (
+              <div className="bg-gray-50 border rounded-full px-6 py-4 inline-flex items-center gap-4">
+                <FileText className="w-4 h-4 text-gray-600" />
+                <span className="text-gray-700 text-sm font-medium">{uploadedFile.name}</span>
+              </div>
+            ) : null}
+          </div>
           
           <div className="flex gap-4">
             <div className="relative flex-1">
@@ -50,7 +52,7 @@ export default function LandingPage({
                 placeholder="Paste your lecture link"
                 value={lectureLink}
                 onChange={(e) => setLectureLink(e.target.value)}
-                className="py-6 pr-8 pl-14 text-md border border-gray-500 text-gray-700 rounded-full w-full"
+                className="py-6 pr-8 pl-14 text-md border border-gray-500 text-gray-700 rounded-full w-full hover:border-gray-400"
               />
             </div>
             <span className="flex items-center text-black text-lg">or</span>
@@ -59,11 +61,11 @@ export default function LandingPage({
                 type="file"
                 accept=".pdf"
                 onChange={handleFileUpload}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer hover:bg-gray-50"
               />
               <Button 
                 variant="outline" 
-                className={`px-8 py-6 text-sm rounded-full ${
+                className={`px-8 py-6 text-sm rounded-full hover:bg-gray-50 hover:border-gray-400 ${
                   uploadedFile 
                     ? 'border-2 border-pink-500 hover:border-pink-600'
                     : 'border border-gray-500 text-gray-700 hover:border-gray-400'

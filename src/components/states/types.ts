@@ -15,6 +15,6 @@ export interface VideoResult {
 }
 
 export type AppState = 'landing' | 'topics' | 'customise' | 'finished'
-export type VideoFormat = 'summary' | 'splitscreen' | 'quiz'
-export type BackgroundVideo = 'minecraft' | 'subway' | 'characters'
-export type VideoStyle = 'brainrot' | 'academic' | 'unhinged' 
+export type VideoFormat = 'summary' | 'splitscreen' | 'quiz' | null
+export type BackgroundVideo = 'minecraft' | 'subway' | 'characters' | null
+export type VideoStyle = 'brainrot' | 'academic' | 'unhinged' | null 
