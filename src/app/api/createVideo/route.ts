@@ -12,6 +12,12 @@ export const maxDuration = 300; // 5 minutes for video generation
 const MAX_VIDEO_DURATION_SECONDS = 60; // Absolute maximum: 1 minute
 const FALLBACK_DURATION_SECONDS = 20;  // For text-only videos
 
+// Utility: Replace 'fr' with 'for real' for TTS (standalone word, case-insensitive)
+function replaceFrWithForReal(text: string): string {
+  // Replace 'fr' as a standalone word (case-insensitive) with 'for real'
+  return text.replace(/\bfr\b/gi, 'for real');
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -110,6 +116,7 @@ async function generateSingleVideo({
   console.log('Voice enabled:', voiceEnabled);
 
   let voiceAudioUrl = '';
+  let voiceAudioFilePath = '';
   let audioDurationInSeconds = FALLBACK_DURATION_SECONDS;
 
   // Validate script duration before voice generation
@@ -129,15 +136,29 @@ async function generateSingleVideo({
   }
 
   // Generate voice audio if enabled
+  let wordTimestamps: any[] | undefined;
   if (voiceEnabled) {
     try {
+      // Use TTS-specific script for voiceover (replace 'fr' with 'for real')
+      const ttsScript = replaceFrWithForReal(script);
       console.log('Generating voice audio...');
-      console.log(`Script length: ${script.length} characters, ${script.trim().split(/\s+/).length} words`);
+      console.log(`TTS Script:`, ttsScript);
+      console.log(`Script length: ${ttsScript.length} characters, ${ttsScript.trim().split(/\s+/).length} words`);
       
-      const voiceResult = await generateVoice({ text: script });
+      const voiceResult = await generateVoice({ text: ttsScript });
       const audioFilename = `voice_${Date.now()}_${topicIndex || 'single'}.mp3`;
-      voiceAudioUrl = await saveVoiceToFile(voiceResult.audioBuffer, audioFilename);
+      const { publicUrl: voiceAudioUrlPublic, filePath: voiceAudioFilePathResult } = await saveVoiceToFile(voiceResult.audioBuffer, audioFilename);
+      voiceAudioUrl = voiceAudioUrlPublic;
+      voiceAudioFilePath = voiceAudioFilePathResult;
       audioDurationInSeconds = voiceResult.durationInSeconds;
+      
+      // Capture word timestamps for precise caption timing
+      if (voiceResult.wordTimestamps && voiceResult.wordTimestamps.length > 0) {
+        wordTimestamps = voiceResult.wordTimestamps;
+        console.log(`Captured ${wordTimestamps.length} word timestamps from ElevenLabs`);
+      } else {
+        console.log('No word timestamps available from ElevenLabs');
+      }
       
       console.log('Voice audio saved:', voiceAudioUrl);
       console.log('Audio duration:', audioDurationInSeconds, 'seconds');
@@ -158,11 +179,11 @@ async function generateSingleVideo({
     } catch (voiceError) {
       console.error('Voice generation failed with error:', voiceError);
       console.warn('Voice generation failed - creating shorter text-only video');
-      audioDurationInSeconds = FALLBACK_DURATION_SECONDS;
+      voiceAudioFilePath = '';
     }
   } else {
     console.log('Voice generation disabled, using shorter duration for text-only video');
-    audioDurationInSeconds = FALLBACK_DURATION_SECONDS;
+    voiceAudioFilePath = '';
   }
 
   // Final duration validation
@@ -197,9 +218,10 @@ async function generateSingleVideo({
     await FFmpegVideoRenderer.renderVideoAdvanced({
       script,
       backgroundVideo: bgVideoUrl || backgroundVideo,
-      voiceAudio: voiceAudioUrl, // voiceAudioUrl is already a complete URL from Supabase
+      voiceAudio: voiceAudioFilePath, // Use the full path here!
       audioDurationInSeconds: finalDuration,
-      outputPath
+      outputPath,
+      wordTimestamps // Pass ElevenLabs word timestamps for precise caption timing
     });
   } catch (renderError) {
     console.error('FFmpeg render failed:', renderError);
@@ -208,27 +230,7 @@ async function generateSingleVideo({
 
   let finalVideoUrl = `/generated-videos/${videoFilename}`;
 
-  // Upload to Supabase if configured
-  try {
-    const { uploadVideoToSupabase } = await import('@/lib/supabase');
-    const videoBuffer = await fs.readFile(outputPath);
-    const supabaseResult = await uploadVideoToSupabase(videoBuffer, videoFilename);
-    
-    if (supabaseResult.success && supabaseResult.url) {
-      finalVideoUrl = supabaseResult.url;
-      console.log('Video uploaded to Supabase successfully');
-      
-      // Clean up local file after successful upload
-      try {
-        await fs.unlink(outputPath);
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-  } catch (supabaseError) {
-    console.warn('Supabase upload failed, using local storage:', supabaseError);
-  }
-  
+  // No Supabase upload, just return local URL
   console.log('Video generated successfully:', finalVideoUrl);
   console.log(`Final video duration: ${finalDuration}s`);
 

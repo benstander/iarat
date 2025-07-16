@@ -404,14 +404,14 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-30">
+    <div className="min-h-screen bg-white text-black pt-20 pb-20 pl-30 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {/* Left Column - Upload and Style Section */}
-        <Card className="rounded-2xl shadow-2xl border border-gray-200 bg-white text-black h-[600px] flex flex-col overflow-hidden">
+        <Card className="rounded-2xl shadow-2xl border border-gray-200 bg-white text-black h-[660px] flex flex-col overflow-hidden">
             <CardHeader className="flex-shrink-0">
-              <CardTitle className="text-2xl font-bold text-black flex items-center gap-3">
+              <CardTitle className="text-xl font-bold text-black flex items-center gap-3">
                 {viewMode === 'topics' ? (
                   <>
                     <Button
@@ -422,13 +422,11 @@ export default function Home() {
                     >
                       ←
                     </Button>
-                    <StickyNote className="h-6 w-6" />
                     Select Topic to Generate
                   </>
                 ) : (
                   <>
-                    <Upload className="h-6 w-6" />
-                    Create Your Video
+                    Turn your notes into <span className="font-bold text-pink-500">brainrot</span>
                   </>
                 )}
               </CardTitle>
@@ -437,12 +435,6 @@ export default function Home() {
               {viewMode === 'topics' ? (
                 // Topic Selection View
                 <div className="flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                    <p className="text-sm text-gray-600">
-                      {topicSummaries.length} topics found • Select topics to generate
-                    </p>
-                  </div>
-                  
                   <div className="flex-1 overflow-y-auto space-y-3 pr-2 min-h-0">
                     {topicSummaries.map((summary, index) => {
                       const isSelected = selectedTopics.has(summary.topicIndex)
@@ -454,9 +446,9 @@ export default function Home() {
                           key={index} 
                           className={`p-4 rounded-lg transition-all duration-200 cursor-pointer ${
                             isGenerated 
-                              ? 'bg-green-50 border-2 border-green-300' 
+                              ? 'bg-pink-50 border-2 border-pink-300' // changed from green to pink
                               : isSelected 
-                                ? 'bg-gray-100 border-2 border-black' 
+                                ? 'bg-gray-100 border-2 border-pink-500' 
                                 : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300'
                           }`}
                           onClick={() => {
@@ -472,32 +464,9 @@ export default function Home() {
                             
                             <div className="flex items-center gap-2">
                               {isGenerated ? (
-                                <div className="flex items-center gap-2">
-                                  <div className="p-1 bg-green-600 rounded-full">
-                                    <Play className="h-3 w-3 text-white" />
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <a
-                                      href={existingVideo.videoUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      View
-                                    </a>
-                                    <a
-                                      href={existingVideo.videoUrl}
-                                      download
-                                      className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <Download className="h-3 w-3" />
-                                    </a>
-                                  </div>
-                                </div>
+                                <></>
                               ) : isSelected ? (
-                                <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
+                                <div className="w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
                                   <div className="w-2 h-2 bg-white rounded-full"></div>
                                 </div>
                               ) : (
@@ -515,7 +484,7 @@ export default function Home() {
                     <Button
                       onClick={generateVideosForSelectedTopics}
                       disabled={isGeneratingVideos || selectedTopics.size === 0}
-                      className="w-full h-12 rounded-[8px] font-semibold bg-purple-600 hover:bg-purple-700 text-white"
+                      className={`w-full h-14 rounded-[8px] font-semibold text-md text-white bg-pink-500 hover:bg-pink-600 disabled:bg-pink-500 disabled:text-white`}
                     >
                       {isGeneratingVideos ? 
                         "Generating Videos..." : 
@@ -578,14 +547,14 @@ export default function Home() {
                       {activeSection === 'pdf' && (
                         <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                           <Label htmlFor="file-upload" className="text-sm font-medium text-gray-700">
-                            PDF Upload (Drag & Drop or Click)
+                            PDF Upload
                           </Label>
                           <div
                             className={`relative border-2 border-dashed rounded-[10px] p-6 text-center transition-all duration-200 cursor-pointer ${
                               dragActive
                                 ? "border-black bg-gray-100"
                                 : uploadedFile
-                                  ? "border-green-400 bg-green-100"
+                                  ? "border-pink-500 bg-pink-100"
                                   : "border-gray-300 hover:border-gray-400 hover:bg-gray-100"
                             }`}
                             onDragEnter={handleDrag}
@@ -596,17 +565,16 @@ export default function Home() {
                           >
                             <Input id="file-upload" type="file" accept=".pdf" onChange={handleFileChange} className="hidden" />
                             {uploadedFile ? (
-                              <div className="flex items-center justify-center gap-2 text-green-700">
-                                <FileText className="h-8 w-8" />
+                              <div className="flex items-center justify-center gap-2 text-pink-700">
+                                <FileText className="h-6 w-6" />
                                 <span className="font-medium">{uploadedFile.name}</span>
                               </div>
                             ) : (
                               <div className="space-y-2">
-                                <Upload className="h-10 w-10 mx-auto text-gray-400" />
+                                <Upload className="h-6 w-6 mx-auto text-gray-400" />
                                 <p className="text-gray-700">
-                                  <span className="font-medium">Click to upload</span> or drag and drop
+                                  <span className="font-regular text-sm">Click to upload or drag and drop</span>
                                 </p>
-                                <p className="text-sm text-gray-400">PDF files only</p>
                               </div>
                             )}
                           </div>
@@ -678,11 +646,11 @@ export default function Home() {
 
                       {/* Voice & Audio Section */}
                       <div className="space-y-3">
-                        <Label className="text-sm font-medium text-black">Voice & Audio</Label>
-                        <div className="flex items-center justify-between p-3 bg-gray-100 rounded-[8px]">
+                        <Label className="text-sm font-medium text-black">Voiceover</Label>
+                        <div className="flex items-center justify-between p-3 bg-gray-100 rounded-[8px] h-12">
                           <div className="flex items-center space-x-2">
                             <Label htmlFor="voiceover" className="text-sm font-medium text-black">
-                              AI Voiceover
+                              Enable Audio
                             </Label>
                           </div>
                           <Switch
@@ -696,7 +664,7 @@ export default function Home() {
                   </div>
 
                   {/* FIXED Generate Button - Always at bottom */}
-                  <div className="border-t border-gray-200 pt-4 bg-white h-20 flex-shrink-0">
+                  <div className="pt-6 bg-white h-20 flex-shrink-0">
                     <Button
                       onClick={() => {
                         if (activeSection === 'pdf' && uploadedFile) {
@@ -707,8 +675,7 @@ export default function Home() {
                           handleGenerate()
                         }
                       }}
-                      className="w-full h-14 rounded-[8px] font-semibold text-md bg-purple-600 hover:bg-purple-700 text-white disabled:bg-gray-300 disabled:text-gray-500"
-                      variant="purple"
+                      className={`w-full h-14 rounded-[8px] font-semibold text-md text-white bg-pink-500 hover:bg-pink-600 disabled:bg-pink-500 disabled:text-white`}
                       disabled={
                         isGenerating || 
                         !backgroundVideo ||
@@ -719,10 +686,10 @@ export default function Home() {
                       }
                     >
                       {isGenerating ? 
-                        (activeSection === 'pdf' ? "Analyzing PDF & Creating Topics..." : "Generating Video...") : 
+                        (activeSection === 'pdf' ? "Generating topics..." : "Generating Video...") : 
                         activeSection === null ? 
                           "Select a Content Type Above" :
-                          "Generate Brainrot Video"
+                          "Generate Video"
                       }
                     </Button>
                   </div>
@@ -734,6 +701,17 @@ export default function Home() {
           {/* Right Column - Video Preview */}
           <div className="flex items-center justify-center">
             <div className="w-80 h-[600px] relative">
+              {/* Loading Spinner Overlay - only when generating video, not topics */}
+              {isGenerating && activeSection !== 'pdf' && (
+                <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                  {/* Inline SVG spinner (public domain) */}
+                  <svg width="64" height="64" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-label="Loading">
+                    <path fill="#D43B11" d="M40,72C22.4,72,8,57.6,8,40C8,22.4,22.4,8,40,8c17.6,0,32,14.4,32,32c0,1.1-0.9,2-2,2s-2-0.9-2-2c0-15.4-12.6-28-28-28S12,24.6,12,40s12.6,28,28,28c1.1,0,2,0.9,2,2S41.1,72,40,72z">
+                      <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 40 40" to="360 40 40" dur="0.8s" repeatCount="indefinite"/>
+                    </path>
+                  </svg>
+                </div>
+              )}
               {generatedVideoUrl ? (
                 <video
                   controls
@@ -786,26 +764,19 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="w-full h-full bg-black rounded-lg shadow-2xl flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <p className="text-gray-400 text-center whitespace-pre-line text-lg">
-                      {isGenerating || isGeneratingVideos
-                        ? (currentGeneratingTopic 
-                            ? `🔥 Creating Video for:\n"${currentGeneratingTopic}"\n\n⚡ This might take a few minutes`
-                            : "🔥 Creating Your\nBrainrot Videos...\n\n⚡ This might take a few minutes") 
-                        : "📱 Upload content &\nselect background to\nget started"}
-                    </p>
-                    {(isGenerating || isGeneratingVideos) && (
-                      <div className="mt-6 space-y-3">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-                        <div className="text-sm text-gray-500">
-                          {activeSection === 'pdf' && !currentGeneratingTopic ? 
-                            "Analyzing content... Splitting into topics..." :
-                            "Generating voice... Rendering video..."
-                          }
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {/* Show Minecraft Parkour background video when idle */}
+                  <video
+                    className="w-full h-full object-cover rounded-lg"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    //src={"https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/background-videos/landing%20page/video_1752314200708_topic4.mp4"}
+                    src={"https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/generated-videos//video_1752327164073_topic3.mp4"}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                  {/* If you do not see the video, add your Minecraft parkour video as public/minecraft-parkour.mp4 */}
                 </div>
               )}
             </div>
