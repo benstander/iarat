@@ -44,3 +44,5 @@ next-env.d.ts
 /temp
 
 public/generated-videos/*
+
+.python-version

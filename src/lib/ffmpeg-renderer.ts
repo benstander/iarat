@@ -29,9 +29,6 @@ export class FFmpegVideoRenderer {
   private static readonly FPS = 30; // Reduced from 45 for better compatibility
   private static readonly FONT_SIZE = 26;
   private static readonly FONT_FAMILY = 'Arial Black';
-  private static readonly MAX_WORDS_PER_CAPTION = 3;
-  private static readonly MIN_WORDS_PER_CAPTION = 1;
-  private static readonly WORDS_PER_MINUTE = 180;
 
   /**
    * Download file from URL to temporary location

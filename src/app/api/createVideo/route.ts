@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateVoice, saveVoiceToFile } from '@/lib/voice-generation';
 import { getRandomMinecraftVideoUrl } from '@/lib/processing';
 import { FFmpegVideoRenderer } from '@/lib/ffmpeg-renderer';
-import { validateScriptDuration, getOptimalWordCount } from '@/lib/script-generation';
+import { validateScriptDuration } from '@/lib/script-generation';
 import path from 'path';
 import fs from 'fs/promises';
 
