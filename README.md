@@ -1,5 +1,2 @@
-iaintreadingallthat
-
-Doomscroll to Distinction
-
-PDF / Lecture notes to short form brainrot reels
+recaps is the name
+PLEASE SAVE US FROM WHATEVER THE FUCK IS GOING ON 
