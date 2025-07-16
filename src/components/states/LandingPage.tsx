@@ -1,7 +1,7 @@
-import React from "react"
+import React, { useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Link, FileText } from "lucide-react"
+import { Link, FileText, X } from "lucide-react"
 
 interface LandingPageProps {
   lectureLink: string
@@ -10,6 +10,7 @@ interface LandingPageProps {
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
   processInput: () => void
   isProcessing: boolean
+  removeUploadedFile: () => void // Added prop
 }
 
 export default function LandingPage({
@@ -18,12 +19,22 @@ export default function LandingPage({
   uploadedFile,
   handleFileUpload,
   processInput,
-  isProcessing
+  isProcessing,
+  removeUploadedFile // Added prop
 }: LandingPageProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRemoveFile = () => {
+    removeUploadedFile();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[66vh]">
       {/* Left Column */}
-      <div className="space-y-30 pl-16">
+      <div className="space-y-20 pl-16">
         <div className="gap-6 flex flex-col">
           <h2 className="text-4xl font-bold leading-tight">
             Turn your lecture into<br />
@@ -41,18 +52,27 @@ export default function LandingPage({
               <div className="bg-gray-50 border rounded-full px-6 py-4 inline-flex items-center gap-4">
                 <FileText className="w-4 h-4 text-gray-600" />
                 <span className="text-gray-700 text-sm font-medium">{uploadedFile.name}</span>
+                <button
+                  type="button"
+                  aria-label="Remove uploaded file"
+                  onClick={handleRemoveFile}
+                  className="p-1 rounded-full hover:bg-gray-50 hover:border-gray-400"
+                  style={{ lineHeight: 0 }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             ) : null}
           </div>
           
           <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Link className="absolute left-6 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-700"/>
+            <div className="relative flex-[2]">
+              <Link className="absolute left-5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-700"/>
               <Input
                 placeholder="Paste your lecture link"
                 value={lectureLink}
                 onChange={(e) => setLectureLink(e.target.value)}
-                className="py-6 pr-8 pl-14 text-md border border-gray-500 text-gray-700 rounded-full w-full hover:border-gray-400"
+                className="py-6 px-12 text-md border border-gray-500 text-gray-700 rounded-full w-full hover:border-gray-400"
               />
             </div>
             <span className="flex items-center text-black text-lg">or</span>
@@ -62,15 +82,17 @@ export default function LandingPage({
                 accept=".pdf"
                 onChange={handleFileUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer hover:bg-gray-50"
+                ref={fileInputRef}
               />
               <Button 
                 variant="outline" 
-                className={`px-8 py-6 text-sm rounded-full hover:bg-gray-50 hover:border-gray-400 ${
+                className={`px-8 py-6 text-sm rounded-full hover:bg-gray-50 hover:border-gray-400 flex items-center ${
                   uploadedFile 
                     ? 'border-2 border-pink-500 hover:border-pink-600'
                     : 'border border-gray-500 text-gray-700 hover:border-gray-400'
                 }`}
               >
+
                 Upload files
               </Button>
             </div>

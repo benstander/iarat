@@ -163,6 +163,7 @@ export default function Home() {
             handleFileUpload={handleFileUpload}
             processInput={processInput}
             isProcessing={isProcessing}
+            removeUploadedFile={() => setUploadedFile(null)}
           />
         )
       case 'topics':
@@ -203,6 +204,7 @@ export default function Home() {
             handleFileUpload={handleFileUpload}
             processInput={processInput}
             isProcessing={isProcessing}
+            removeUploadedFile={() => setUploadedFile(null)}
           />
         )
     }
