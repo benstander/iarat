@@ -1,6 +1,7 @@
 import React from "react"
 import { Button } from "@/components/ui/button"
 import { VideoFormat, BackgroundVideo, VideoStyle } from "./types"
+import ProgressBar from "@/components/ui/ProgressBar"
 
 interface CustomisePageProps {
   videoFormat: VideoFormat

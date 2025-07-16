@@ -1,6 +1,7 @@
 import React from "react"
 import { Button } from "@/components/ui/button"
 import { TopicSummary } from "./types"
+import ProgressBar from "@/components/ui/ProgressBar"
 
 interface TopicsPageProps {
   topicSummaries: TopicSummary[]

@@ -2,6 +2,7 @@ import React, { useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Link, FileText, X } from "lucide-react"
+import ProgressBar from "@/components/ui/ProgressBar"
 
 interface LandingPageProps {
   lectureLink: string
