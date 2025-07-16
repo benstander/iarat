@@ -222,10 +222,11 @@ export default function Home() {
 
     setIsGenerating(true)
     setGeneratedVideoUrl("")
+    setTopicSummaries([])
+    setGeneratedVideos([])
     
     try {
-      // First transcribe the YouTube video
-      const transcribeResponse = await fetch('/api/ytTranscribe', {
+      const response = await fetch('/api/youtubeUpload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -235,36 +236,23 @@ export default function Home() {
         }),
       })
 
-      if (!transcribeResponse.ok) {
-        throw new Error('Failed to transcribe YouTube video')
+      if (!response.ok) {
+        throw new Error('Failed to process YouTube video')
       }
 
-      const transcribeData = await transcribeResponse.json()
-      console.log("Successfully transcribed YouTube video")
-
-      // Then generate script from transcript
-      const scriptResponse = await fetch('/api/videoScript', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          textContent: transcribeData.transcript,
-        }),
-      })
-
-      if (!scriptResponse.ok) {
-        throw new Error('Failed to generate script')
-      }
-
-      const scriptData = await scriptResponse.json()
-      console.log("Successfully generated script from YouTube video")
+      const data = await response.json()
+      console.log(`Successfully processed YouTube video`)
+      console.log(`Generated ${data.summaries.length} topic summaries`)
       
-      // Now generate the video with the script
-      await generateVideoWithScript(scriptData.script)
+      // Set the topic summaries and switch to topic view
+      setTopicSummaries(data.summaries)
+      setViewMode('topics')
+      
     } catch (error) {
       console.error('Error processing YouTube video:', error)
       alert('Failed to process YouTube video. Please check the URL and try again.')
+      setYoutubeLink("")
+    } finally {
       setIsGenerating(false)
     }
   }
@@ -344,6 +332,7 @@ export default function Home() {
     setTopicSummaries([])
     setGeneratedVideos([])
     setUploadedFile(null)
+    setYoutubeLink("")
     setSelectedTopics(new Set())
   }
 
@@ -686,7 +675,7 @@ export default function Home() {
                       }
                     >
                       {isGenerating ? 
-                        (activeSection === 'pdf' ? "Generating topics..." : "Generating Video...") : 
+                        (activeSection === 'pdf' || activeSection === 'youtube' ? "Generating topics..." : "Generating Video...") : 
                         activeSection === null ? 
                           "Select a Content Type Above" :
                           "Generate Video"
