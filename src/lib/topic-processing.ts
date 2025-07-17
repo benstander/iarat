@@ -42,20 +42,23 @@ export async function processTextIntoTopics({
     model: openai('gpt-4o'),
     prompt: `
       Split the following ${contentType.toLowerCase()} content into 3-7 distinct topics or sections. 
-      Each topic should have a clear title and contain the relevant content from the original text.
+      Each topic should have a clear title and contain the most relevant content from the original text.
+      For long content, summarize key points rather than including everything verbatim.
       
-      Return ONLY a valid JSON array in this exact format:
+      Return ONLY a valid JSON array in this exact format (ensure proper JSON syntax):
       [
         {
-          "title": "Topic Title",
-          "content": "Relevant content from the original text for this topic"
+          "title": "Clear Topic Title",
+          "content": "Key points and relevant content for this topic (2-3 sentences max)"
         }
       ]
+      
+      IMPORTANT: Ensure the JSON is properly formatted and complete. Do not truncate mid-sentence.
       
       Content to analyze:
       ${textContent}
     `,
-    maxTokens: 2000,
+    maxTokens: 4000, // Increased for longer videos
   });
 
   const topicsJson = topicsResult.text;

@@ -48,7 +48,7 @@ export default function LandingPage({
 
         <div className="space-y-4">
           {/* File Upload Display (fixed height to prevent layout shift) */}
-          <div style={{ minHeight: 42 }}>
+          <div style={{ minHeight: 56 }}>
             {uploadedFile ? (
               <div className="bg-gray-50 border rounded-full px-6 py-4 inline-flex items-center gap-4">
                 <FileText className="w-4 h-4 text-gray-600" />

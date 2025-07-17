@@ -4,9 +4,9 @@ import fs from 'fs/promises';
 import https from 'https';
 import http from 'http';
 import { URL } from 'url';
-import { experimental_transcribe as transcribe } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { googleSTTService } from './google-stt';
 import type { WordTimestamp } from './voice-generation';
+import crypto from 'crypto';
 
 export interface FFmpegVideoOptions {
   script: string;
@@ -30,24 +30,93 @@ export class FFmpegVideoRenderer {
   private static readonly FONT_SIZE = 26;
   private static readonly FONT_FAMILY = 'Arial Black';
 
+  // FFmpeg optimization settings
+  private static readonly VIDEO_PRESET = 'veryfast'; // Faster encoding
+  private static readonly VIDEO_CRF = 28; // Slightly reduced quality for better speed
+  private static readonly AUDIO_BITRATE = '96k'; // Reduced from 128k
+  private static readonly THREAD_COUNT = 4; // Use multiple threads
+
+  // Cache settings
+  private static readonly CACHE_DIR = path.join(process.cwd(), 'cache', 'background-videos');
+  private static readonly CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
   /**
-   * Download file from URL to temporary location
+   * Initialize cache directory
+   */
+  private static async initializeCache(): Promise<void> {
+    try {
+      await fs.mkdir(this.CACHE_DIR, { recursive: true });
+    } catch (error) {
+      console.warn('Failed to create cache directory:', error);
+    }
+  }
+
+  /**
+   * Get cached file path for a URL
+   */
+  private static getCacheFilePath(url: string): string {
+    const hash = crypto.createHash('md5').update(url).digest('hex');
+    return path.join(this.CACHE_DIR, `${hash}.mp4`);
+  }
+
+  /**
+   * Check if cached file exists and is valid
+   */
+  private static async isCacheValid(filePath: string): Promise<boolean> {
+    try {
+      const stats = await fs.stat(filePath);
+      const age = Date.now() - stats.mtimeMs;
+      return age < this.CACHE_MAX_AGE;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Download file from URL to temporary location with caching
    */
   private static async downloadFile(url: string, outputPath: string): Promise<void> {
+    // Initialize cache directory
+    await this.initializeCache();
+
+    // For background videos, check cache first
+    if (outputPath.includes('temp_bg_')) {
+      const cacheFilePath = this.getCacheFilePath(url);
+      
+      // Check if we have a valid cached version
+      if (await this.isCacheValid(cacheFilePath)) {
+        console.log('Using cached background video');
+        await fs.copyFile(cacheFilePath, outputPath);
+        return;
+      }
+    }
+
     return new Promise((resolve, reject) => {
       const parsedUrl = new URL(url);
       const client = parsedUrl.protocol === 'https:' ? https : http;
       
       const file = require('fs').createWriteStream(outputPath);
-      const request = client.get(url, (response) => {
+      const request = client.get(url, async (response) => {
         if (response.statusCode !== 200) {
           reject(new Error(`Failed to download file: ${response.statusCode}`));
           return;
         }
         
         response.pipe(file);
-        file.on('finish', () => {
+        file.on('finish', async () => {
           file.close();
+
+          // If this is a background video, cache it
+          if (outputPath.includes('temp_bg_')) {
+            try {
+              const cacheFilePath = this.getCacheFilePath(url);
+              await fs.copyFile(outputPath, cacheFilePath);
+              console.log('Background video cached successfully');
+            } catch (error) {
+              console.warn('Failed to cache background video:', error);
+            }
+          }
+
           resolve();
         });
       });
@@ -70,60 +139,45 @@ export class FFmpegVideoRenderer {
   }
 
   /**
-   * Transcribe voice audio with word-level timestamps using OpenAI Whisper
+   * Transcribe voice audio with word-level timestamps using Google Speech-to-Text
    */
   private static async transcribeVoiceAudio(audioPath: string): Promise<WordTimestamp[]> {
     try {
-      console.log('Transcribing voice audio with word-level timestamps...');
+      console.log('Transcribing voice audio with word-level timestamps using Google STT...');
       
       // Read the audio file
       const audioBuffer = await fs.readFile(audioPath);
       
-      // Transcribe with word-level timestamps
-      const result = await transcribe({
-        model: openai.transcription('whisper-1'),
-        audio: audioBuffer,
-        providerOptions: {
-          openai: {
-            language: 'en',
-            temperature: 0.0, // Use deterministic output
-            response_format: 'verbose_json', // Get detailed timestamps
-            timestamp_granularities: ['word'], // Request word-level timestamps
-          },
-        },
-      });
+      // Ensure Google Cloud Storage bucket exists
+      await googleSTTService.ensureBucketExists();
+      
+      // Transcribe with word-level timestamps using Google STT
+      const result = await googleSTTService.transcribeAudio(audioBuffer, 'en-US');
       
       // Extract word-level timestamps from the response
-      const wordTimestamps: WordTimestamp[] = [];
+      let wordTimestamps: WordTimestamp[] = [];
       
-      // Handle word-level timestamps if available
-      if (result && typeof result === 'object' && 'words' in result) {
-        const words = (result as any).words;
-        if (Array.isArray(words)) {
-          for (const wordData of words) {
-            if (wordData.word && typeof wordData.start === 'number' && typeof wordData.end === 'number') {
-              wordTimestamps.push({
-                word: wordData.word.trim(),
-                startTime: wordData.start,
-                endTime: wordData.end,
-              });
-            }
-          }
-        }
+      // Use Google STT word timestamps if available
+      if (result.wordTimestamps && result.wordTimestamps.length > 0) {
+        wordTimestamps = result.wordTimestamps.map(wt => ({
+          word: wt.word.trim(),
+          startTime: wt.startTime,
+          endTime: wt.endTime,
+        }));
       }
       
       // If no word-level timestamps, fall back to sentence-level estimation
       if (wordTimestamps.length === 0) {
         console.warn('No word-level timestamps found, creating estimated timestamps from text');
         const text = result.text || '';
-        const words = text.split(/\s+/).filter(w => w.trim().length > 0);
+        const words = text.split(/\s+/).filter((w: string) => w.trim().length > 0);
         
         // Estimate timing based on average speech rate
         const AVERAGE_WORDS_PER_SECOND = 2.5; // Conservative estimate
         const totalDuration = words.length / AVERAGE_WORDS_PER_SECOND;
         const timePerWord = totalDuration / words.length;
         
-        words.forEach((word, index) => {
+        words.forEach((word: string, index: number) => {
           wordTimestamps.push({
             word: word.trim(),
             startTime: index * timePerWord,
@@ -603,7 +657,7 @@ export class FFmpegVideoRenderer {
   static async renderVideo(options: FFmpegVideoOptions): Promise<void> {
     const { script, backgroundVideo, voiceAudio, audioDurationInSeconds, outputPath } = options;
     
-    console.log('Starting FFmpeg video render...');
+    console.log('Starting FFmpeg video render with optimized settings...');
     console.log('Options:', { 
       script: script.substring(0, 100) + '...', 
       backgroundVideo: this.isUrl(backgroundVideo) ? 'URL' : backgroundVideo,
@@ -674,7 +728,10 @@ export class FFmpegVideoRenderer {
       '-i', localBackgroundVideo, // Background video input
       '-i', localVoiceAudio, // Voice audio input
       
-      // Simplified filter chain for better reliability
+      // Thread optimization
+      '-threads', this.THREAD_COUNT.toString(),
+      
+      // Simplified and optimized filter chain
       '-filter_complex', `
         [0:v]scale=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,
         pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
@@ -689,18 +746,21 @@ export class FFmpegVideoRenderer {
         [voice_audio][bg_audio]amix=inputs=2:duration=first:dropout_transition=3[audio_out]
       `.replace(/\s+/g, ' ').trim(),
       
-      // Output settings
+      // Optimized output settings
       '-map', '[final_video]',
       '-map', '[audio_out]',
       '-c:v', 'libx264',
-      '-preset', 'fast',
-      '-crf', '23',
+      '-preset', this.VIDEO_PRESET,
+      '-crf', this.VIDEO_CRF.toString(),
       '-r', this.FPS.toString(),
       '-pix_fmt', 'yuv420p',
       '-t', audioDurationInSeconds.toString(),
       '-c:a', 'aac',
-      '-b:a', '128k',
+      '-b:a', this.AUDIO_BITRATE,
       '-ar', '44100',
+      // Additional optimizations
+      '-movflags', '+faststart', // Enable fast start for web playback
+      '-tune', 'fastdecode', // Optimize for fast decoding
       outputPath
     ];
 
