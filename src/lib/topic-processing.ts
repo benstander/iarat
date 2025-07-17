@@ -9,7 +9,7 @@ function cleanJsonResponse(text: string): string {
   return cleaned;
 }
 
-interface TopicSummary {
+export interface TopicSummary {
   topicTitle: string;
   script: string;
   topicIndex: number;
@@ -18,16 +18,19 @@ interface TopicSummary {
 interface ProcessTopicsParams {
   textContent: string;
   brainrotStyle?: string;
-  contentType?: 'PDF' | 'YouTube video';
+  videoStyle?: 'brainrot' | 'academic' | 'unhinged';
+  contentType?: 'PDF' | 'YouTube';
 }
 
 export async function processTextIntoTopics({
   textContent,
   brainrotStyle = 'engaging and modern',
+  videoStyle = 'brainrot',
   contentType = 'PDF'
 }: ProcessTopicsParams): Promise<TopicSummary[]> {
   
   console.log('Extracted text length:', textContent.length);
+  console.log('Video style:', videoStyle);
 
   if (!textContent || textContent.trim().length === 0) {
     throw new Error(`No text could be extracted from the ${contentType.toLowerCase()}`);
@@ -86,13 +89,14 @@ export async function processTextIntoTopics({
   
   for (let i = 0; i < topics.length; i++) {
     const topic = topics[i];
-    console.log(`Generating script for topic ${i + 1}: ${topic.title}`);
+    console.log(`Generating script for topic ${i + 1}: ${topic.title} (style: ${videoStyle})`);
     
     try {
-      // Use the shared script generation utility
+      // Use the shared script generation utility with video style
       const script = await generateVideoScript({
         textContent: `${topic.title}: ${topic.content}`,
-        brainrotStyle
+        brainrotStyle,
+        videoStyle
       });
 
       summaries.push({
@@ -112,6 +116,6 @@ export async function processTextIntoTopics({
     }
   }
 
-  console.log(`Generated ${summaries.length} brainrot summaries`);
+  console.log(`Generated ${summaries.length} summaries with ${videoStyle} style`);
   return summaries;
 } 

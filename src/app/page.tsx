@@ -37,7 +37,17 @@ export default function Home() {
     }
   }
 
-  const processInput = async () => {
+  // Updated: Landing page now just goes to customise (no processing)
+  const goToCustomise = () => {
+    if (!lectureLink.trim() && !uploadedFile) {
+      alert("Please provide a lecture link or upload a file!")
+      return
+    }
+    setCurrentState('customise')
+  }
+
+  // Updated: Process input and generate topics from customise page
+  const processInputAndGenerateTopics = async () => {
     if (!lectureLink.trim() && !uploadedFile) {
       alert("Please provide a lecture link or upload a file!")
       return
@@ -51,6 +61,7 @@ export default function Home() {
       if (uploadedFile) {
         const formData = new FormData()
         formData.append('pdf', uploadedFile)
+        formData.append('videoStyle', videoStyle || 'brainrot')
         
         response = await fetch('/api/pdfUpload', {
           method: 'POST',
@@ -64,6 +75,7 @@ export default function Home() {
           },
           body: JSON.stringify({
             youtubeUrl: lectureLink,
+            videoStyle: videoStyle || 'brainrot',
           }),
         })
       }
@@ -94,15 +106,13 @@ export default function Home() {
     setSelectedTopics(newSelected)
   }
 
-  const continueToCustomise = () => {
+  // Updated: Generate reel from topics page and go to finished
+  const generateReelFromTopics = async () => {
     if (selectedTopics.size === 0) {
       alert("Please select at least one topic!")
       return
     }
-    setCurrentState('customise')
-  }
 
-  const generateReel = async () => {
     setIsProcessing(true)
     
     try {
@@ -161,18 +171,9 @@ export default function Home() {
             setLectureLink={setLectureLink}
             uploadedFile={uploadedFile}
             handleFileUpload={handleFileUpload}
-            processInput={processInput}
-            isProcessing={isProcessing}
+            processInput={goToCustomise}
+            isProcessing={false} // No processing on landing page now
             removeUploadedFile={() => setUploadedFile(null)}
-          />
-        )
-      case 'topics':
-        return (
-          <TopicsPage
-            topicSummaries={topicSummaries}
-            selectedTopics={selectedTopics}
-            handleTopicToggle={handleTopicToggle}
-            continueToCustomise={continueToCustomise}
           />
         )
       case 'customise':
@@ -184,7 +185,17 @@ export default function Home() {
             setBackgroundVideo={setBackgroundVideo}
             videoStyle={videoStyle}
             setVideoStyle={setVideoStyle}
-            generateReel={generateReel}
+            generateReel={processInputAndGenerateTopics}
+            isProcessing={isProcessing}
+          />
+        )
+      case 'topics':
+        return (
+          <TopicsPage
+            topicSummaries={topicSummaries}
+            selectedTopics={selectedTopics}
+            handleTopicToggle={handleTopicToggle}
+            continueToCustomise={generateReelFromTopics}
             isProcessing={isProcessing}
           />
         )
@@ -202,8 +213,8 @@ export default function Home() {
             setLectureLink={setLectureLink}
             uploadedFile={uploadedFile}
             handleFileUpload={handleFileUpload}
-            processInput={processInput}
-            isProcessing={isProcessing}
+            processInput={goToCustomise}
+            isProcessing={false}
             removeUploadedFile={() => setUploadedFile(null)}
           />
         )

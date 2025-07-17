@@ -1,163 +1,165 @@
 import { openai } from '@ai-sdk/openai';
+import { xai } from '@ai-sdk/xai';
 import { generateText } from 'ai';
 
-export interface ScriptGenerationOptions {
+interface ScriptGenerationOptions {
   textContent: string;
   brainrotStyle?: string;
+  videoStyle?: 'brainrot' | 'academic' | 'unhinged';
   maxDurationSeconds?: number;
 }
 
-// ElevenLabs speaking rate configuration
+// Constants for timing calculations
 const ELEVENLABS_SPEAKING_RATE = {
-  WORDS_PER_MINUTE: 150, // Conservative estimate for ElevenLabs
-  WORDS_PER_SECOND: 2.5,  // 150 WPM / 60 seconds
-  BUFFER_FACTOR: 0.9      // 10% buffer to ensure we stay under limit
+  WORDS_PER_SECOND: 2.8, // Average rate for ElevenLabs TTS
+  SAFETY_BUFFER: 0.9 // 10% buffer for safety
 };
 
-/**
- * Calculate maximum word count for given duration
- */
+// Helper function to calculate word count from duration
 function calculateMaxWords(durationSeconds: number): number {
-  const maxWords = Math.floor(durationSeconds * ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND * ELEVENLABS_SPEAKING_RATE.BUFFER_FACTOR);
-  console.log(`Calculated max words for ${durationSeconds}s: ${maxWords} words`);
-  return maxWords;
+  const baseWords = Math.floor(durationSeconds * ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND * ELEVENLABS_SPEAKING_RATE.SAFETY_BUFFER);
+  return Math.max(20, baseWords); // Minimum 20 words
 }
 
-/**
- * Estimate content density to adjust word count
- */
-function analyzeContentDensity(textContent: string): {
-  density: 'low' | 'medium' | 'high';
-  recommendedWords: number;
-  maxDurationSeconds: number;
+function getStylePrompt(videoStyle: 'brainrot' | 'academic' | 'unhinged' = 'brainrot'): {
+  roleDescription: string;
+  languageInstructions: string;
+  styleSpecific: string;
+  languageBalance: string;
 } {
-  const contentLength = textContent.length;
-  const wordCount = textContent.trim().split(/\s+/).length;
-  
-  // Analyze content characteristics
-  const hasNumbers = /\d/.test(textContent);
-  const hasComplexTerms = /[A-Z][a-z]+[A-Z]/.test(textContent); // camelCase or technical terms
-  const averageWordLength = contentLength / wordCount;
-  
-  let density: 'low' | 'medium' | 'high';
-  let maxDurationSeconds = 60; // Default 1 minute maximum
-  
-  // Determine content density - technical content gets more time, simple content can be shorter
-  if (averageWordLength > 7 || hasComplexTerms || hasNumbers) {
-    density = 'high';
-    maxDurationSeconds = 60; // Technical content needs full time for proper explanation
-  } else if (averageWordLength > 5) {
-    density = 'medium';
-    maxDurationSeconds = 60; // Balanced content gets full time
-  } else {
-    density = 'low';
-    maxDurationSeconds = 45; // Simple content can be explained concisely
+  switch (videoStyle) {
+    case 'academic':
+      return {
+        roleDescription: "You are a respected university professor who makes complex topics accessible and engaging through clear, authoritative teaching.",
+        languageInstructions: "Uses precise academic language while remaining approachable and engaging. Employ scholarly terminology when appropriate, clear explanations, and professional teaching methods.",
+        styleSpecific: `- Use formal but engaging academic language
+- Explain concepts with methodical precision
+- Include relevant examples and case studies
+- Structure information logically with clear transitions
+- Maintain scholarly authority while being accessible
+- Use phrases like "It's important to understand that...", "This concept illustrates...", "Research shows that...", "Let's examine this carefully..."`,
+        languageBalance: "90% educational content, 10% engaging delivery techniques"
+      };
+    
+    case 'unhinged':
+      return {
+        roleDescription: "You're a no-bullshit educator who doesn't sugarcoat anything. You teach with raw passion, brutal honesty, and a large amount of swearing to make sure the message hits home.",
+        languageInstructions: "Use unapologetically direct language with plenty of swearing to hammer the point. Be raw, honest, and make sure the educational value isn't lost in the process.",
+        styleSpecific: `- Use unapologetically direct language and plenty of swearing to hammer key points
+- Be brutally honest about why topics matter in the real world, no sugarcoating
+- Call out bullshit and get straight to the fucking point
+- Use phrases like "Here's the real shit...", "This is fucking important because...", "Stop pretending like...", "The truth nobody tells you is..."
+- Be passionate and intense about the subject matter, don't hold back
+- Cut through academic fluff and speak plainly about practical implications`,
+        languageBalance: "70% educational content, 30% unfiltered commentary and swearing"
+      };
+    
+    case 'brainrot':
+    default:
+      return {
+        roleDescription: "You are an educational content creator who makes learning viral and engaging through strategic Gen-Z language while ensuring effective teaching.",
+        languageInstructions: "Uses strategic Gen-Z language (2-4 phrases max) only when it enhances understanding. Focus on making learning memorable and engaging.",
+        styleSpecific: `- Uses strategic Gen-Z language (2-4 phrases max) only when it enhances understanding: "no cap", "fr", "lowkey", "it's giving", "that's actually insane", "hits different"
+- Explains concepts with clear examples or analogies
+- Breaks down complex ideas into simple, digestible parts
+- Maintains engagement throughout the entire duration`,
+        languageBalance: "70% educational content, 30% Gen-Z language"
+      };
   }
-  
-  const recommendedWords = calculateMaxWords(maxDurationSeconds);
-  
-  console.log(`Content analysis: density=${density}, avgWordLength=${averageWordLength.toFixed(1)}, recommendedWords=${recommendedWords}, maxDuration=${maxDurationSeconds}s`);
-  
-  return {
-    density,
-    recommendedWords,
-    maxDurationSeconds
-  };
 }
 
 export async function generateVideoScript({ 
   textContent, 
   brainrotStyle = 'engaging and modern',
+  videoStyle = 'brainrot',
   maxDurationSeconds = 60
 }: ScriptGenerationOptions): Promise<string> {
   if (!textContent) {
     throw new Error('Text content is required');
   }
 
-  // Enforce absolute maximum of 60 seconds
-  const absoluteMaxDuration = Math.min(maxDurationSeconds, 60);
-  
-  // Analyze content to determine optimal word count
-  const contentAnalysis = analyzeContentDensity(textContent);
-  const effectiveMaxDuration = Math.min(absoluteMaxDuration, contentAnalysis.maxDurationSeconds);
-  const maxWords = calculateMaxWords(effectiveMaxDuration);
+  // Always target 60 seconds maximum
+  const targetDuration = Math.min(maxDurationSeconds, 60);
+  const recommendedWords = calculateMaxWords(targetDuration);
   
   console.log(`Script generation parameters:`);
-  console.log(`- Max duration: ${effectiveMaxDuration}s (requested: ${maxDurationSeconds}s)`);
-  console.log(`- Max words: ${maxWords}`);
-  console.log(`- Content density: ${contentAnalysis.density}`);
+  console.log(`- Video style: ${videoStyle}`);
+  console.log(`- Target duration: ${targetDuration}s`);
+  console.log(`- Recommended words: ${recommendedWords}`);
 
-  // Create a prompt that enforces strict word count limits
-  const prompt = `You are an educational content creator who makes learning viral and engaging. Transform this educational content into a VOICEOVER SCRIPT that TEACHES effectively while using strategic Gen-Z language to keep it entertaining.
+  // Get style-specific prompt components
+  const stylePrompt = getStylePrompt(videoStyle);
+
+  // Create a prompt that provides duration guidance without strict enforcement
+  const prompt = `${stylePrompt.roleDescription} Transform this educational content into a VOICEOVER SCRIPT that TEACHES effectively using the specified style.
 
 Content to work with: ${textContent}
 
 WRITE A VOICEOVER SCRIPT that:
 
-CRITICAL WORD COUNT LIMIT: 
-- Use MAXIMUM ${maxWords} words (this is STRICT - content will be cut off if longer)
-- Target ${Math.floor(maxWords * 0.9)}-${maxWords} words for optimal timing
-- This ensures exactly ${effectiveMaxDuration} seconds or less when read by ElevenLabs TTS
+DURATION GUIDANCE: 
+- Target approximately ${recommendedWords} words for optimal ${targetDuration}-second timing
+- This ensures good pacing when read by ElevenLabs TTS (~2.8 words per second)
+- Prioritize complete thoughts and clear explanations over strict word limits
 
 CONTENT REQUIREMENTS:
 - Contains ONLY spoken content - no production instructions, visual cues, or stage directions
 - Focuses on teaching the core concepts clearly and memorably
-- Uses strategic Gen-Z language (2-4 phrases max) only when it enhances understanding: "no cap", "fr", "lowkey", "it's giving", "that's actually insane", "hits different"
+- ${stylePrompt.languageInstructions}
 - Explains the main concept with clear examples or analogies
 - Breaks down complex ideas into simple, digestible parts
 - Maintains engagement throughout the entire duration
 
-STRUCTURE FOR ${contentAnalysis.density.toUpperCase()} DENSITY CONTENT:
-${contentAnalysis.density === 'high' ? 
-  '- Use full 60 seconds to thoroughly explain complex concepts\n- Break down technical ideas into digestible steps\n- Include concrete examples and analogies\n- Allow time for concepts to sink in' :
-  contentAnalysis.density === 'medium' ?
-  '- Cover 2-3 related key points with good explanations\n- Include practical examples\n- Balance education with engagement' :
-  '- Be concise and focused - explain key points efficiently\n- Use simple language and clear examples\n- Keep it punchy and engaging without unnecessary padding'
-}
+STYLE-SPECIFIC REQUIREMENTS:
+${stylePrompt.styleSpecific}
+
+STRUCTURE REQUIREMENTS:
+- Use sufficient time to thoroughly explain the concepts
+- Break down ideas into digestible steps
+- Include concrete examples and analogies
+- Cover the key points with good explanations
+- Balance education with engagement
 
 CRITICAL REQUIREMENTS:
-- 70% educational content, 30% Gen-Z language
+- ${stylePrompt.languageBalance}
 - Ensure viewers actually LEARN something concrete
-- NEVER exceed ${maxWords} words under any circumstances
 - Focus on clarity and understanding over pure entertainment
 - Structure with clear beginning, middle, and end
 - Include specific examples or interesting facts
 - NEVER include production notes like "cut to visuals", "show graphics", or similar instructions
 - Write ONLY what the narrator will say out loud
+- Complete your thoughts naturally - don't cut off mid-sentence for word count
 
-Style: ${brainrotStyle}
+Legacy Style Parameter: ${brainrotStyle}
 
-WORD COUNT REMINDER: Your response must be ${maxWords} words or fewer. Count carefully!`;
+TIMING REMINDER: Aim for around ${recommendedWords} words, but prioritize educational value and natural flow over strict adherence to word count.`;
 
   const { text } = await generateText({
-    model: openai('gpt-4o'),
+    model: xai('grok-3'),
     prompt: prompt,
-    maxTokens: Math.min(800, maxWords * 4), // Adjust tokens based on word limit
+    maxTokens: 1000, // Increased token limit for more flexibility
     temperature: 0.7, 
   });
 
   const generatedScript = text.trim();
   
-  // Validate word count and trim if necessary
+  // Log script information without trimming
   const words = generatedScript.split(/\s+/);
   const actualWordCount = words.length;
+  const estimatedDuration = actualWordCount / ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND;
   
   console.log(`Generated script: ${actualWordCount} words`);
+  console.log(`Estimated duration: ~${estimatedDuration.toFixed(1)}s`);
   
-  if (actualWordCount > maxWords) {
-    console.warn(`Script exceeded word limit (${actualWordCount} > ${maxWords}), trimming...`);
-    const trimmedScript = words.slice(0, maxWords).join(' ');
-    console.log(`Trimmed script: ${maxWords} words`);
-    return trimmedScript;
+  if (estimatedDuration > 60) {
+    console.warn(`Script may exceed 60 seconds (estimated ${estimatedDuration.toFixed(1)}s), but proceeding without trimming`);
   }
-  
-  console.log(`Script generation successful: ${actualWordCount} words for ~${(actualWordCount / ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND).toFixed(1)}s duration`);
   
   return generatedScript;
 }
 
 /**
- * Validate script duration and word count
+ * Validate script duration and word count (for informational purposes)
  */
 export function validateScriptDuration(script: string, maxDurationSeconds: number = 60): {
   isValid: boolean;
@@ -172,7 +174,7 @@ export function validateScriptDuration(script: string, maxDurationSeconds: numbe
   const estimatedDuration = actualWords / ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND;
   
   return {
-    isValid: actualWords <= maxWords && estimatedDuration <= maxDurationSeconds,
+    isValid: estimatedDuration <= maxDurationSeconds, // Changed to duration-based validation only
     actualWords,
     maxWords,
     estimatedDuration,

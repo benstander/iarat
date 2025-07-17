@@ -8,6 +8,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('pdf') as File;
     const brainrotStyle = formData.get('brainrotStyle') as string || 'engaging and modern';
+    const videoStyle = formData.get('videoStyle') as 'brainrot' | 'academic' | 'unhinged' || 'brainrot';
 
     if (!file) {
       return NextResponse.json(
@@ -32,13 +33,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Extract text from PDF
+    console.log(`Processing PDF file: ${file.name} (${file.size} bytes, style: ${videoStyle})`);
+
+    // Convert File to Buffer for pdf-parse
     const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Extract text from PDF using pdf-parse  
     const pdfParse = require('pdf-parse');
-    const pdfData = await pdfParse(Buffer.from(arrayBuffer));
+    const pdfData = await pdfParse(buffer);
     const extractedText = pdfData.text;
 
-    console.log('Extracted text length:', extractedText.length);
+    console.log(`Extracted text length: ${extractedText.length} characters`);
 
     if (!extractedText || extractedText.trim().length === 0) {
       return NextResponse.json(
@@ -51,6 +57,7 @@ export async function POST(req: NextRequest) {
     const summaries = await processTextIntoTopics({
       textContent: extractedText,
       brainrotStyle,
+      videoStyle,
       contentType: 'PDF'
     });
 
@@ -58,7 +65,7 @@ export async function POST(req: NextRequest) {
       success: true,
       summaries,
       totalTopics: summaries.length,
-      message: `Successfully processed PDF and created ${summaries.length} topic summaries`
+      message: `Successfully processed PDF and created ${summaries.length} topic summaries with ${videoStyle} style`
     });
 
   } catch (error) {
