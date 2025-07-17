@@ -176,7 +176,6 @@ function validateTextForVoice(text: string, maxDurationSeconds: number = MAX_VOI
   wordCount: number;
   estimatedDuration: number;
   maxWords: number;
-  trimmedText?: string;
 } {
   const words = text.trim().split(/\s+/);
   const wordCount = words.length;
@@ -185,24 +184,12 @@ function validateTextForVoice(text: string, maxDurationSeconds: number = MAX_VOI
   
   const isValid = estimatedDuration <= maxDurationSeconds;
   
-  const result = {
+  return {
     isValid,
     wordCount,
     estimatedDuration,
     maxWords
   };
-  
-  if (!isValid) {
-    // Trim text to fit within duration
-    const trimmedWords = words.slice(0, maxWords);
-    const trimmedText = trimmedWords.join(' ');
-    return {
-      ...result,
-      trimmedText
-    };
-  }
-  
-  return result;
 }
 
 /**
@@ -266,10 +253,14 @@ function convertCharacterTimestampsToWords(
 
 export async function generateVoice(options: VoiceGenerationOptions): Promise<VoiceGenerationResult> {
   try {
-    let { text, maxDurationSeconds = MAX_VOICE_DURATION_SECONDS } = options;
+    const { text } = options;
+    let maxDurationSeconds = options.maxDurationSeconds || 120; // Default to 2 minutes instead of 60
     
-    // Enforce absolute maximum
-    maxDurationSeconds = Math.min(maxDurationSeconds, MAX_VOICE_DURATION_SECONDS);
+    // Allow longer durations for educational content completeness
+    if (maxDurationSeconds > 300) {
+      console.warn(`Very long duration requested (${maxDurationSeconds}s), capping to 5 minutes for safety`);
+      maxDurationSeconds = 300;
+    }
     
     console.log('Generating voice with Eleven Labs (with timing data)...');
     console.log(`Text length: ${text.length} characters`);
@@ -285,11 +276,8 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
       maxWords: validation.maxWords
     });
     
-    if (!validation.isValid && validation.trimmedText) {
-      console.warn(`Text is too long for ${maxDurationSeconds}s limit, trimming...`);
-      console.warn(`  Original: ${validation.wordCount} words (~${validation.estimatedDuration.toFixed(1)}s)`);
-      console.warn(`  Trimmed: ${validation.maxWords} words (~${maxDurationSeconds}s)`);
-      text = validation.trimmedText;
+    if (!validation.isValid) {
+      console.warn(`Voice generation proceeding with ${validation.wordCount} words (~${validation.estimatedDuration.toFixed(1)}s)`);
     }
     
     const finalWordCount = text.trim().split(/\s+/).length;
@@ -393,7 +381,7 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
       };
     } catch (durationError) {
       console.error('Failed to get actual duration, using estimation:', durationError);
-      const fallbackDuration = Math.min(estimatedDuration, MAX_VOICE_DURATION_SECONDS);
+      const fallbackDuration = estimatedDuration; // Use full estimated duration
       console.log(`Using estimated duration: ${fallbackDuration.toFixed(1)}s`);
       
       return {
@@ -427,4 +415,4 @@ export async function saveVoiceToFile(audioBuffer: Buffer, filename: string): Pr
     console.error('Error saving voice file:', error);
     throw error;
   }
-} 
+}

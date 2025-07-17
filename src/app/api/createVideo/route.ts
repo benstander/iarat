@@ -119,20 +119,12 @@ async function generateSingleVideo({
   let voiceAudioFilePath = '';
   let audioDurationInSeconds = FALLBACK_DURATION_SECONDS;
 
-  // Validate script duration before voice generation
-  const scriptValidation = validateScriptDuration(script, MAX_VIDEO_DURATION_SECONDS);
-  console.log(`Script validation:`, scriptValidation);
+  // Log script information for monitoring
+  const scriptValidation = validateScriptDuration(script, 120); // Allow up to 2 minutes
+  console.log(`Script info: ${scriptValidation.actualWords} words (~${scriptValidation.estimatedDuration.toFixed(1)}s estimated duration)`);
   
-  if (!scriptValidation.isValid) {
-    console.warn(`Script is too long for 1-minute limit:`);
-    console.warn(`  - Actual: ${scriptValidation.actualWords} words (~${scriptValidation.estimatedDuration.toFixed(1)}s)`);
-    console.warn(`  - Maximum: ${scriptValidation.maxWords} words (~${scriptValidation.maxDuration}s)`);
-    
-    // Trim script to fit within 1-minute limit
-    const words = script.trim().split(/\s+/);
-    const trimmedScript = words.slice(0, scriptValidation.maxWords).join(' ');
-    console.log(`Trimmed script from ${words.length} to ${scriptValidation.maxWords} words`);
-    script = trimmedScript;
+  if (scriptValidation.estimatedDuration > 90) {
+    console.warn(`Script is quite long (~${scriptValidation.estimatedDuration.toFixed(1)}s), but proceeding to preserve educational content`);
   }
 
   // Generate voice audio if enabled
@@ -163,17 +155,15 @@ async function generateSingleVideo({
       console.log('Voice audio saved:', voiceAudioUrl);
       console.log('Audio duration:', audioDurationInSeconds, 'seconds');
       
-      // Enforce maximum video duration
-      if (audioDurationInSeconds > MAX_VIDEO_DURATION_SECONDS) {
-        console.warn(`Audio duration exceeds maximum (${audioDurationInSeconds}s > ${MAX_VIDEO_DURATION_SECONDS}s)`);
-        console.warn(`Capping duration to ${MAX_VIDEO_DURATION_SECONDS} seconds`);
-        audioDurationInSeconds = MAX_VIDEO_DURATION_SECONDS;
+      // Note: Allowing videos longer than 60 seconds if needed for content completeness
+      if (audioDurationInSeconds > 120) {
+        console.warn(`Audio duration is very long (${audioDurationInSeconds}s), but proceeding to preserve content`);
       }
       
       // Validate duration is reasonable
       if (audioDurationInSeconds <= 0 || audioDurationInSeconds > 300) {
         console.warn(`Invalid audio duration detected: ${audioDurationInSeconds}s, using fallback`);
-        audioDurationInSeconds = Math.min(FALLBACK_DURATION_SECONDS, MAX_VIDEO_DURATION_SECONDS);
+        audioDurationInSeconds = FALLBACK_DURATION_SECONDS;
       }
       
     } catch (voiceError) {
@@ -186,11 +176,8 @@ async function generateSingleVideo({
     voiceAudioFilePath = '';
   }
 
-  // Final duration validation
-  const finalDuration = Math.min(audioDurationInSeconds, MAX_VIDEO_DURATION_SECONDS);
-  if (finalDuration !== audioDurationInSeconds) {
-    console.log(`Final duration capped: ${audioDurationInSeconds}s → ${finalDuration}s`);
-  }
+  // Use actual audio duration without artificial caps
+  const finalDuration = audioDurationInSeconds;
 
   // Get random minecraft video URL from Supabase
   let bgVideoUrl = '';
@@ -211,7 +198,7 @@ async function generateSingleVideo({
   const outputPath = path.join(outputDir, videoFilename);
 
   console.log(`Starting FFmpeg video render...`);
-  console.log(`Video duration: ${finalDuration}s (maximum: ${MAX_VIDEO_DURATION_SECONDS}s)`);
+  console.log(`Video duration: ${finalDuration}s`);
 
   // Use FFmpeg to render the video
   try {
@@ -239,7 +226,7 @@ async function generateSingleVideo({
     videoUrl: finalVideoUrl,
     voiceAudioUrl,
     duration: finalDuration,
-    maxDuration: MAX_VIDEO_DURATION_SECONDS,
+    maxDuration: finalDuration,
     message: topicTitle ? `Video for "${topicTitle}" generated successfully (${finalDuration}s)` : `Video generated successfully (${finalDuration}s)`
   };
 } 

@@ -8,13 +8,15 @@ interface TopicsPageProps {
   selectedTopics: Set<number>
   handleTopicToggle: (topicIndex: number) => void
   continueToCustomise: () => void
+  isProcessing: boolean
 }
 
 export default function TopicsPage({
   topicSummaries,
   selectedTopics,
   handleTopicToggle,
-  continueToCustomise
+  continueToCustomise,
+  isProcessing
 }: TopicsPageProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
@@ -33,7 +35,7 @@ export default function TopicsPage({
                 onClick={() => handleTopicToggle(summary.topicIndex)}
                 className={`px-6 py-4 rounded-full border cursor-pointer transition-all duration-200 ${
                   selectedTopics.has(summary.topicIndex)
-                    ? 'border-pink-500 bg-pink-50'
+                    ? 'border-pink-500 bg-pink-50 border-[1.5px]'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
                 style={{ minHeight: '56px' }}
@@ -47,10 +49,10 @@ export default function TopicsPage({
           <div className="pt-2">
             <Button
               onClick={continueToCustomise}
-              disabled={selectedTopics.size === 0}
+              disabled={selectedTopics.size === 0 || isProcessing}
               className="w-full py-7 text-md font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-600 text-white hover:from-pink-500 hover:to-pink-700 disabled:opacity-50"
             >
-              Continue to background
+              {isProcessing ? "Generating Reel..." : "Generate Reel"}
             </Button>
           </div>
         </div>

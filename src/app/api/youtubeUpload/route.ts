@@ -10,7 +10,7 @@ export const maxDuration = 60; // Increased for multiple topic processing
 
 export async function POST(req: NextRequest) {
   try {
-    const { youtubeUrl, brainrotStyle = 'engaging and modern' } = await req.json();
+    const { youtubeUrl, brainrotStyle = 'engaging and modern', videoStyle = 'brainrot' } = await req.json();
 
     if (!youtubeUrl) {
       return NextResponse.json(
@@ -28,66 +28,77 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create temporary directory for audio files
-    const tempDir = path.join(process.cwd(), 'temp');
-    try {
-      await fs.mkdir(tempDir, { recursive: true });
-    } catch (error) {
-      // Directory might already exist
-    }
+    console.log(`Processing YouTube URL: ${youtubeUrl} (style: ${videoStyle})`);
 
-    const audioFileName = `audio_${Date.now()}.mp3`;
-    const audioPath = path.join(tempDir, audioFileName);
+    // Download audio using youtube-dl
+    const tempDir = path.join(process.cwd(), 'temp');
+    const audioFilename = `audio_${Date.now()}.wav`;
+    const audioPath = path.join(tempDir, audioFilename);
 
     let extractedText: string;
 
     try {
-      // Extract audio from YouTube video
-      console.log('Extracting audio from YouTube...');
-      const ytdlp = youtubedl.create('/opt/homebrew/bin/yt-dlp');
-      await ytdlp(youtubeUrl, {
+      // Ensure temp directory exists
+      await fs.mkdir(tempDir, { recursive: true });
+
+      // Download and extract audio
+      await youtubedl(youtubeUrl, {
         extractAudio: true,
-        audioFormat: 'mp3',
-        audioQuality: 192,
-        output: audioPath,
-        noPlaylist: true,
+        audioFormat: 'wav',
+        output: path.join(tempDir, '%(title)s.%(ext)s'),
+        audioQuality: 0 // Best quality (number, not string)
       });
 
-      // Read the audio file
-      console.log('Reading audio file...');
-      const audioBuffer = await fs.readFile(audioPath);
-
-      // Transcribe using OpenAI Whisper via AI SDK
-      console.log('Transcribing with Whisper...');
-      const { text: transcript } = await transcribe({
-        model: openai.transcription('whisper-1'),
-        audio: audioBuffer,
-        providerOptions: {
-          openai: {
-            language: 'en', 
-            temperature: 0.2,
-          },
-        },
-      });
-
-      extractedText = transcript;
-
-      // Clean up the temporary audio file
-      try {
-        await fs.unlink(audioPath);
-      } catch (cleanupError) {
-        console.warn('Failed to clean up audio file:', cleanupError);
+      // Find the downloaded file (youtube-dl might change the filename)
+      const files = await fs.readdir(tempDir);
+      const audioFile = files.find(file => file.endsWith('.wav'));
+      
+      if (!audioFile) {
+        throw new Error('Downloaded audio file not found');
       }
 
-    } catch (processingError) {
-      // Clean up the audio file if it exists
+      const actualAudioPath = path.join(tempDir, audioFile);
+      console.log('Audio download completed:', actualAudioPath);
+
+      // Read the audio file
+      const audioBuffer = await fs.readFile(actualAudioPath);
+
+      // Transcribe using OpenAI Whisper
+      console.log('Starting transcription...');
+      
+      const { text } = await transcribe({
+        model: openai.transcription('whisper-1'),
+        audio: audioBuffer,
+      });
+
+      extractedText = text;
+      console.log(`Transcription completed. Text length: ${extractedText.length} characters`);
+
+      // Clean up temporary file
+      try {
+        await fs.unlink(actualAudioPath);
+        console.log('Temporary file cleaned up');
+      } catch (cleanupError) {
+        console.warn('Failed to clean up temporary file:', cleanupError);
+      }
+
+      if (!extractedText || extractedText.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'No transcript could be generated from the video' },
+          { status: 400 }
+        );
+      }
+
+    } catch (error) {
+      console.error('YouTube processing error:', error);
+      
+      // Clean up temporary file if it exists
       try {
         await fs.unlink(audioPath);
       } catch (cleanupError) {
         // Ignore cleanup errors
       }
-
-      console.error('Processing error:', processingError);
+      
       return NextResponse.json(
         { error: 'Failed to process YouTube video. Please check the URL and try again.' },
         { status: 500 }
@@ -98,14 +109,15 @@ export async function POST(req: NextRequest) {
     const summaries = await processTextIntoTopics({
       textContent: extractedText,
       brainrotStyle,
-      contentType: 'YouTube video'
+      videoStyle,
+      contentType: 'YouTube'
     });
 
     return NextResponse.json({
       success: true,
       summaries,
       totalTopics: summaries.length,
-      message: `Successfully processed YouTube video and created ${summaries.length} topic summaries`
+      message: `Successfully processed YouTube video and created ${summaries.length} topic summaries with ${videoStyle} style`
     });
 
   } catch (error) {
