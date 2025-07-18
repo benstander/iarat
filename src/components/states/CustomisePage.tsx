@@ -55,7 +55,7 @@ export default function CustomisePage({
           <div className="space-y-4">
             <h3 className="text-md font-semibold">Background video</h3>
             <div className="flex gap-4 w-full">
-              {(['minecraft', 'subway', 'characters'] as const).map((bg) => (
+              {(['minecraft', 'subway', 'video'] as const).map((bg) => (
                 <Button
                   key={bg}
                   onClick={() => setBackgroundVideo(backgroundVideo === bg ? null : bg)}
@@ -67,7 +67,9 @@ export default function CustomisePage({
                   }`}
                 >
                   {bg === 'minecraft' ? 'Minecraft Parkour' : 
-                   bg === 'subway' ? 'Subway Surfers' : 'Characters'}
+                   bg === 'subway' ? 'Subway Surfers' :
+                   bg === 'video' ? 'Video Clip' :
+                   'Video'}
                 </Button>
               ))}
             </div>

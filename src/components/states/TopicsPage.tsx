@@ -21,14 +21,11 @@ export default function TopicsPage({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
       {/* Left Column */}
-      <div className="space-y-6 pl-16">
+      <div className="pl-16 flex flex-col justify-between min-h-[540px] h-[540px]">
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Select topics</h3>
-          {/* Scrollable topics list, 6.5 topics visible */}
-          <div
-            className="space-y-2 overflow-y-auto"
-            style={{ maxHeight: '400px' }} // 6.5 * 56px (py-4 = 16px + font = 24px + border/margin)
-          >
+          {/* Scrollable topics list that takes remaining space */}
+          <div className="space-y-2 overflow-y-auto flex-1" style={{ maxHeight: 'calc(540px - 120px)' }}>
             {topicSummaries.map((summary, index) => (
               <div
                 key={index}
@@ -44,18 +41,16 @@ export default function TopicsPage({
               </div>
             ))}
           </div>
-
-          {/* Button sits just below the scrollable list */}
-          <div className="pt-2">
-            <Button
-              onClick={continueToCustomise}
-              disabled={selectedTopics.size === 0 || isProcessing}
-              className="w-full py-7 text-md font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-600 text-white hover:from-pink-500 hover:to-pink-700 disabled:opacity-50"
-            >
-              {isProcessing ? "Generating Reel..." : "Generate Reel"}
-            </Button>
-          </div>
         </div>
+
+        {/* Button aligned with bottom of phone screen */}
+        <Button
+          onClick={continueToCustomise}
+          disabled={selectedTopics.size === 0 || isProcessing}
+          className="w-full py-7 text-md font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-600 text-white hover:from-pink-500 hover:to-pink-700 disabled:opacity-50"
+        >
+          {isProcessing ? "Generating Reel..." : "Generate Reel"}
+        </Button>
       </div>
 
       {/* Right Column - Video Preview */}
