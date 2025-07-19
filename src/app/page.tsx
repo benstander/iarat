@@ -229,6 +229,8 @@ export default function Home() {
             handleTopicToggle={handleTopicToggle}
             continueToCustomise={generateReelFromTopics}
             isProcessing={isProcessing}
+            backgroundVideo={backgroundVideo}
+            captionOptions={captionOptions}
           />
         )
       case 'finished':

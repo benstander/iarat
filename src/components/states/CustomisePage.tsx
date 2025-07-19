@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { 
   Select,
@@ -38,13 +38,32 @@ export default function CustomisePage({
   generateReel,
   isProcessing
 }: CustomisePageProps) {
+  const minecraftVideoRef = useRef<HTMLVideoElement>(null)
+  const subwayVideoRef = useRef<HTMLVideoElement>(null)
+  const megaRampVideoRef = useRef<HTMLVideoElement>(null)
+
+  // Preload videos when component mounts
+  useEffect(() => {
+    const preloadVideos = () => {
+      if (minecraftVideoRef.current) {
+        minecraftVideoRef.current.load()
+      }
+      if (subwayVideoRef.current) {
+        subwayVideoRef.current.load()
+      }
+      if (megaRampVideoRef.current) {
+        megaRampVideoRef.current.load()
+      }
+    }
+    preloadVideos()
+  }, [])
+
   // Helper function to get font size in pixels
   const getFontSize = (size: CaptionSize) => {
     switch (size) {
-      case 'small': return '24px'
-      case 'medium': return '32px'
-      case 'large': return '40px'
-      case 'extra-large': return '48px'
+      case 'small': return '22px'
+      case 'medium': return '28px'
+      case 'large': return '34px'
       default: return '32px'
     }
   }
@@ -52,25 +71,10 @@ export default function CustomisePage({
   // Helper function to get position styling
   const getPositionStyle = (position: CaptionPosition) => {
     switch (position) {
-      case 'top': return { top: '10%', transform: 'translateX(-50%)' }
+      case 'top': return { top: '25%', transform: 'translateX(-50%)' }
       case 'middle': return { top: '50%', transform: 'translate(-50%, -50%)' }
-      case 'bottom': return { bottom: '10%', transform: 'translateX(-50%)' }
+      case 'bottom': return { bottom: '25%', transform: 'translateX(-50%)' }
       default: return { bottom: '10%', transform: 'translateX(-50%)' }
-    }
-  }
-
-  // Helper function to get video URL based on background selection
-  const getBackgroundVideoUrl = (bg: BackgroundVideo) => {
-    switch (bg) {
-      case 'minecraft':
-        return 'https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/background-videos/minecraft-parkour.mp4'
-      case 'subway':
-        return 'https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/background-videos/subway-surfers.mp4'
-      case 'video':
-        return 'https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/background-videos/generic-video.mp4'
-      default:
-        // Default fallback video
-        return 'https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/generated-videos//video_1752327164073_topic3.mp4'
     }
   }
 
@@ -105,7 +109,7 @@ export default function CustomisePage({
           <div className="space-y-4">
             <h3 className="text-md font-semibold">Background video</h3>
             <div className="flex gap-4 w-full">
-              {(['minecraft', 'subway', 'video'] as const).map((bg) => (
+              {(['minecraft', 'subway', 'mega-ramp'] as const).map((bg) => (
                 <Button
                   key={bg}
                   onClick={() => setBackgroundVideo(backgroundVideo === bg ? null : bg)}
@@ -118,7 +122,7 @@ export default function CustomisePage({
                 >
                   {bg === 'minecraft' ? 'Minecraft Parkour' : 
                    bg === 'subway' ? 'Subway Surfers' :
-                   bg === 'video' ? 'Video Clip' :
+                   bg === 'mega-ramp' ? 'Mega Ramp' :
                    'Video'}
                 </Button>
               ))}
@@ -163,8 +167,6 @@ export default function CustomisePage({
                 <SelectContent>
                   <SelectItem value="Arial Black">Arial Black</SelectItem>
                   <SelectItem value="Helvetica">Helvetica</SelectItem>
-                  <SelectItem value="Times New Roman">Times New Roman</SelectItem>
-                  <SelectItem value="Impact">Impact</SelectItem>
                   <SelectItem value="Comic Sans MS">Comic Sans MS</SelectItem>
                 </SelectContent>
               </Select>
@@ -178,7 +180,6 @@ export default function CustomisePage({
                   <SelectItem value="small">Small</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="large">Large</SelectItem>
-                  <SelectItem value="extra-large">Extra Large</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -209,21 +210,57 @@ export default function CustomisePage({
       {/* Right Column - Video Preview with Caption Overlay */}
       <div className="flex justify-end pr-16">
         <div className="w-74 h-[540px] rounded-2xl overflow-hidden shadow-2xl relative">
+          {/* Minecraft Video - cached and preloaded */}
           <video
-            key={backgroundVideo} // Force re-render when background changes
-            className="w-full h-full object-cover"
+            ref={minecraftVideoRef}
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideo === 'minecraft' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
             autoPlay
             loop
             muted
             playsInline
-            src={getBackgroundVideoUrl(backgroundVideo)}
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/minecraft/mp1.mp4"
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Subway Video - cached and preloaded */}
+          <video
+            ref={subwayVideoRef}
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideo === 'subway' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/subway/ss1.mp4"
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Mega Ramp Video - cached and preloaded */}
+          <video
+            ref={megaRampVideoRef}
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideo === 'mega-ramp' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/gta/gta1.mp4"
           >
             Your browser does not support the video tag.
           </video>
           
           {/* Caption Preview Overlay */}
           <div 
-            className="absolute left-1/2 text-center max-w-[90%] px-4 pointer-events-none"
+            className="absolute left-1/2 text-center max-w-[90%] px-4 pointer-events-none z-10"
             style={{
               ...getPositionStyle(captionOptions.position),
               fontFamily: captionOptions.font,
@@ -235,7 +272,7 @@ export default function CustomisePage({
               wordWrap: 'break-word'
             }}
           >
-            This is how your captions will look in the final video
+            Captions
           </div>
         </div>
       </div>

@@ -22,8 +22,8 @@ export interface CaptionOptions {
 
 export type AppState = 'landing' | 'topics' | 'customise' | 'finished'
 export type VideoFormat = 'summary' | 'splitscreen' | 'quiz' | null
-export type BackgroundVideo = 'minecraft' | 'subway' | 'video' | null
+export type BackgroundVideo = 'minecraft' | 'subway' | 'mega-ramp' | null
 export type VideoStyle = 'brainrot' | 'academic' | 'unhinged' | null
-export type CaptionFont = 'Arial Black' | 'Helvetica' | 'Times New Roman' | 'Impact' | 'Comic Sans MS'
-export type CaptionSize = 'small' | 'medium' | 'large' | 'extra-large'
+export type CaptionFont = 'Arial Black' | 'Helvetica' | 'Comic Sans MS'
+export type CaptionSize = 'small' | 'medium' | 'large'
 export type CaptionPosition = 'top' | 'middle' | 'bottom' 
