@@ -8,6 +8,12 @@ import { googleSTTService } from './google-stt';
 import type { WordTimestamp } from './voice-generation';
 import crypto from 'crypto';
 
+export interface CaptionOptions {
+  font: string;
+  size: string;
+  position: string;
+}
+
 export interface FFmpegVideoOptions {
   script: string;
   backgroundVideo: string;
@@ -15,6 +21,7 @@ export interface FFmpegVideoOptions {
   audioDurationInSeconds: number;
   outputPath: string;
   wordTimestamps?: WordTimestamp[]; // Add timing data from ElevenLabs
+  captionOptions?: CaptionOptions; // Add caption customization options
 }
 
 export interface CaptionChunk {
@@ -27,8 +34,8 @@ export class FFmpegVideoRenderer {
   private static readonly VIDEO_WIDTH = 1080;
   private static readonly VIDEO_HEIGHT = 1920;
   private static readonly FPS = 30; // Reduced from 45 for better compatibility
-  private static readonly FONT_SIZE = 26;
-  private static readonly FONT_FAMILY = 'Arial Black';
+  private static readonly DEFAULT_FONT_SIZE = 26;
+  private static readonly DEFAULT_FONT_FAMILY = 'Arial Black';
 
   // FFmpeg optimization settings
   private static readonly VIDEO_PRESET = 'veryfast'; // Faster encoding
@@ -39,6 +46,35 @@ export class FFmpegVideoRenderer {
   // Cache settings
   private static readonly CACHE_DIR = path.join(process.cwd(), 'cache', 'background-videos');
   private static readonly CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
+  /**
+   * Convert caption size to FFmpeg font size
+   */
+  private static getCaptionFontSize(size: string): number {
+    switch (size) {
+      case 'small': return 20;
+      case 'medium': return 26;
+      case 'large': return 32;
+      case 'extra-large': return 40;
+      default: return this.DEFAULT_FONT_SIZE;
+    }
+  }
+
+  /**
+   * Convert caption position to FFmpeg alignment and margin
+   */
+  private static getCaptionPositioning(position: string): { alignment: number; marginV: number } {
+    switch (position) {
+      case 'top': 
+        return { alignment: 8, marginV: 100 }; // Top center
+      case 'middle': 
+        return { alignment: 5, marginV: 0 };   // Middle center
+      case 'bottom': 
+        return { alignment: 2, marginV: 100 }; // Bottom center
+      default: 
+        return { alignment: 2, marginV: 100 }; // Default to bottom
+    }
+  }
 
   /**
    * Initialize cache directory
@@ -655,7 +691,7 @@ export class FFmpegVideoRenderer {
    * Render video using FFmpeg with improved reliability
    */
   static async renderVideo(options: FFmpegVideoOptions): Promise<void> {
-    const { script, backgroundVideo, voiceAudio, audioDurationInSeconds, outputPath } = options;
+    const { script, backgroundVideo, voiceAudio, audioDurationInSeconds, outputPath, captionOptions } = options;
     
     console.log('Starting FFmpeg video render with optimized settings...');
     console.log('Options:', { 
@@ -721,6 +757,11 @@ export class FFmpegVideoRenderer {
     const subtitlePath = path.join(path.dirname(outputPath), `subtitles_${Date.now()}.srt`);
     await this.createSubtitleFile(captions, subtitlePath);
 
+    // Get caption styling options
+    const fontSize = captionOptions ? this.getCaptionFontSize(captionOptions.size) : this.DEFAULT_FONT_SIZE;
+    const fontFamily = captionOptions?.font || this.DEFAULT_FONT_FAMILY;
+    const positioning = captionOptions ? this.getCaptionPositioning(captionOptions.position) : { alignment: 2, marginV: 100 };
+
     // Use stream_loop for more reliable looping
     const ffmpegArgs = [
       '-y', // Overwrite output file
@@ -737,7 +778,7 @@ export class FFmpegVideoRenderer {
         pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
         fps=${this.FPS}[scaled];
         
-        [scaled]subtitles=${subtitlePath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}:force_style='FontName=${this.FONT_FAMILY},FontSize=${this.FONT_SIZE},PrimaryColour=&Hffffff,OutlineColour=&H000000,Outline=3,Shadow=2,Bold=1,Alignment=2,MarginV=100'[with_subs];
+        [scaled]subtitles=${subtitlePath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}:force_style='FontName=${fontFamily},FontSize=${fontSize},PrimaryColour=&Hffffff,OutlineColour=&H000000,Outline=3,Shadow=2,Bold=1,Alignment=${positioning.alignment},MarginV=${positioning.marginV}'[with_subs];
         
         [with_subs]copy[final_video];
         

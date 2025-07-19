@@ -10,6 +10,10 @@ import {
   VideoFormat, 
   BackgroundVideo, 
   VideoStyle,
+  CaptionOptions,
+  CaptionFont,
+  CaptionSize,
+  CaptionPosition,
   LandingPage,
   TopicsPage,
   CustomisePage,
@@ -28,6 +32,11 @@ export default function Home() {
   const [videoFormat, setVideoFormat] = useState<VideoFormat>('summary')
   const [backgroundVideo, setBackgroundVideo] = useState<BackgroundVideo>('subway')
   const [videoStyle, setVideoStyle] = useState<VideoStyle>('brainrot')
+  const [captionOptions, setCaptionOptions] = useState<CaptionOptions>({
+    font: 'Arial Black',
+    size: 'medium',
+    position: 'bottom'
+  })
   const [isProcessing, setIsProcessing] = useState(false)
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState("")
 
@@ -35,6 +44,19 @@ export default function Home() {
     if (e.target.files && e.target.files[0]) {
       setUploadedFile(e.target.files[0])
     }
+  }
+
+  // Caption option setters
+  const setCaptionFont = (font: CaptionFont) => {
+    setCaptionOptions(prev => ({ ...prev, font }))
+  }
+
+  const setCaptionSize = (size: CaptionSize) => {
+    setCaptionOptions(prev => ({ ...prev, size }))
+  }
+
+  const setCaptionPosition = (position: CaptionPosition) => {
+    setCaptionOptions(prev => ({ ...prev, position }))
   }
 
   // Updated: Landing page now just goes to customise (no processing)
@@ -128,7 +150,8 @@ export default function Home() {
           backgroundVideo: backgroundVideo === 'subway' ? 'subway' : 'minecraft',
           voiceEnabled: true,
           videoFormat,
-          videoStyle
+          videoStyle,
+          captionOptions
         }),
       })
 
@@ -160,6 +183,11 @@ export default function Home() {
     setVideoFormat('summary')
     setBackgroundVideo('subway')
     setVideoStyle('brainrot')
+    setCaptionOptions({
+      font: 'Arial Black',
+      size: 'medium',
+      position: 'bottom'
+    })
   }
 
   const renderCurrentState = () => {
@@ -185,6 +213,10 @@ export default function Home() {
             setBackgroundVideo={setBackgroundVideo}
             videoStyle={videoStyle}
             setVideoStyle={setVideoStyle}
+            captionOptions={captionOptions}
+            setCaptionFont={setCaptionFont}
+            setCaptionSize={setCaptionSize}
+            setCaptionPosition={setCaptionPosition}
             generateReel={processInputAndGenerateTopics}
             isProcessing={isProcessing}
           />
