@@ -1,6 +1,7 @@
 export interface VoiceGenerationOptions {
   text: string;
   voiceId?: string;
+  voiceOptions?: { style: string; character: string };
   stability?: number;
   similarityBoost?: number;
   maxDurationSeconds?: number;
@@ -39,6 +40,19 @@ const ELEVENLABS_SPEAKING_RATE = {
 // Maximum duration constants
 const MAX_VOICE_DURATION_SECONDS = 60; // 1 minute maximum
 const MIN_VOICE_DURATION_SECONDS = 5;  // 5 seconds minimum
+
+// Voice character mapping to ElevenLabs voice IDs
+const VOICE_CHARACTER_MAP = {
+  'bella': 'EXAVITQu4vr4xnSDxMaL', // Bella
+  'andrew': 'pNInz6obpgDQGcFmaJgB', // Adam (default)
+  'lebron': 'ErXwobaYiN019PkySvjV'  // Antoni
+};
+
+// Function to get voice ID from character
+function getVoiceIdFromCharacter(character?: string): string {
+  if (!character) return VOICE_CHARACTER_MAP.andrew; // Default to andrew
+  return VOICE_CHARACTER_MAP[character as keyof typeof VOICE_CHARACTER_MAP] || VOICE_CHARACTER_MAP.andrew;
+}
 
 // Get actual audio duration from audio buffer using ffprobe
 async function getActualAudioDuration(audioBuffer: Buffer): Promise<number> {
@@ -283,9 +297,15 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
     const finalWordCount = text.trim().split(/\s+/).length;
     const estimatedDuration = finalWordCount / ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND;
     
+    // Get voice ID from options
+    const voiceId = options.voiceOptions?.character ? 
+      getVoiceIdFromCharacter(options.voiceOptions.character) : 
+      getVoiceIdFromCharacter('andrew'); // Default to andrew
+    
     // Make API call to ElevenLabs with timing data
     console.log('Calling ElevenLabs with-timestamps endpoint...');
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB/with-timestamps`, {
+    console.log(`Using voice ID: ${voiceId} for character: ${options.voiceOptions?.character || 'andrew'}`);
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps`, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',

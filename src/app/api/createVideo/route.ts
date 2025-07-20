@@ -21,7 +21,7 @@ function replaceFrWithForReal(text: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { script, summaries, backgroundVideo, voiceEnabled = true } = body;
+    const { script, summaries, backgroundVideo, voiceEnabled = true, voiceOptions, captionOptions } = body;
 
     // Handle both single script and multiple summaries
     if (!script && !summaries) {
@@ -45,8 +45,10 @@ export async function POST(req: NextRequest) {
             script: summary.script,
             backgroundVideo: backgroundVideo || 'minecraft',
             voiceEnabled,
+            voiceOptions,
             topicTitle: summary.topicTitle,
-            topicIndex: summary.topicIndex
+            topicIndex: summary.topicIndex,
+            captionOptions
           });
           
           videoResults.push({
@@ -83,7 +85,9 @@ export async function POST(req: NextRequest) {
       const result = await generateSingleVideo({
         script,
         backgroundVideo: backgroundVideo || 'minecraft',
-        voiceEnabled
+        voiceEnabled,
+        voiceOptions,
+        captionOptions
       });
       
       return NextResponse.json(result);
@@ -102,14 +106,18 @@ async function generateSingleVideo({
   script,
   backgroundVideo,
   voiceEnabled,
+  voiceOptions,
   topicTitle,
-  topicIndex
+  topicIndex,
+  captionOptions
 }: {
   script: string;
   backgroundVideo: string;
   voiceEnabled: boolean;
+  voiceOptions?: { style: string; character: string };
   topicTitle?: string;
   topicIndex?: number;
+  captionOptions?: { font: string; size: string; position: string };
 }) {
   console.log('Script:', script);
   console.log('Background video:', backgroundVideo);
@@ -128,7 +136,7 @@ async function generateSingleVideo({
   }
 
   // Generate voice audio if enabled
-  let wordTimestamps: any[] | undefined;
+  let wordTimestamps: Array<{ word: string; startTime: number; endTime: number }> | undefined;
   if (voiceEnabled) {
     try {
       // Use TTS-specific script for voiceover (replace 'fr' with 'for real')
@@ -137,7 +145,10 @@ async function generateSingleVideo({
       console.log(`TTS Script:`, ttsScript);
       console.log(`Script length: ${ttsScript.length} characters, ${ttsScript.trim().split(/\s+/).length} words`);
       
-      const voiceResult = await generateVoice({ text: ttsScript });
+      const voiceResult = await generateVoice({ 
+        text: ttsScript, 
+        voiceOptions: voiceOptions 
+      });
       const audioFilename = `voice_${Date.now()}_${topicIndex || 'single'}.mp3`;
       const { publicUrl: voiceAudioUrlPublic, filePath: voiceAudioFilePathResult } = await saveVoiceToFile(voiceResult.audioBuffer, audioFilename);
       voiceAudioUrl = voiceAudioUrlPublic;
@@ -208,7 +219,8 @@ async function generateSingleVideo({
       voiceAudio: voiceAudioFilePath, // Use the full path here!
       audioDurationInSeconds: finalDuration,
       outputPath,
-      wordTimestamps // Pass ElevenLabs word timestamps for precise caption timing
+      wordTimestamps, // Pass ElevenLabs word timestamps for precise caption timing
+      captionOptions // Pass caption customization options
     });
   } catch (renderError) {
     console.error('FFmpeg render failed:', renderError);
