@@ -21,7 +21,7 @@ function replaceFrWithForReal(text: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { script, summaries, backgroundVideo, voiceEnabled = true, captionOptions } = body;
+    const { script, summaries, backgroundVideo, voiceEnabled = true, voiceOptions, captionOptions } = body;
 
     // Handle both single script and multiple summaries
     if (!script && !summaries) {
@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
             script: summary.script,
             backgroundVideo: backgroundVideo || 'minecraft',
             voiceEnabled,
+            voiceOptions,
             topicTitle: summary.topicTitle,
             topicIndex: summary.topicIndex,
             captionOptions
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
         script,
         backgroundVideo: backgroundVideo || 'minecraft',
         voiceEnabled,
+        voiceOptions,
         captionOptions
       });
       
@@ -104,6 +106,7 @@ async function generateSingleVideo({
   script,
   backgroundVideo,
   voiceEnabled,
+  voiceOptions,
   topicTitle,
   topicIndex,
   captionOptions
@@ -111,6 +114,7 @@ async function generateSingleVideo({
   script: string;
   backgroundVideo: string;
   voiceEnabled: boolean;
+  voiceOptions?: { style: string; character: string };
   topicTitle?: string;
   topicIndex?: number;
   captionOptions?: { font: string; size: string; position: string };
@@ -141,7 +145,10 @@ async function generateSingleVideo({
       console.log(`TTS Script:`, ttsScript);
       console.log(`Script length: ${ttsScript.length} characters, ${ttsScript.trim().split(/\s+/).length} words`);
       
-      const voiceResult = await generateVoice({ text: ttsScript });
+      const voiceResult = await generateVoice({ 
+        text: ttsScript, 
+        voiceOptions: voiceOptions 
+      });
       const audioFilename = `voice_${Date.now()}_${topicIndex || 'single'}.mp3`;
       const { publicUrl: voiceAudioUrlPublic, filePath: voiceAudioFilePathResult } = await saveVoiceToFile(voiceResult.audioBuffer, audioFilename);
       voiceAudioUrl = voiceAudioUrlPublic;

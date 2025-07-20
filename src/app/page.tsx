@@ -5,17 +5,18 @@ import { useState } from "react"
 
 // Import types and components
 import { 
-  TopicSummary, 
-  AppState, 
   VideoFormat, 
   BackgroundVideo, 
   VideoStyle,
+  VoiceOptions,
+  VoiceStyle,
+  VoiceCharacter,
   CaptionOptions,
   CaptionFont,
   CaptionSize,
   CaptionPosition,
+  Topic,
   LandingPage,
-  TopicsPage,
   CustomisePage,
   FinishedPage
 } from "@/components/states"
@@ -23,20 +24,31 @@ import {
 // Import shared components
 import Header from "@/components/shared/Header"
 
+// Interface for topic summaries from API
+interface TopicSummary {
+  topicTitle: string;
+  script: string;
+  topicIndex: number;
+}
+
 export default function Home() {
-  const [currentState, setCurrentState] = useState<AppState>('landing')
+  const [currentState, setCurrentState] = useState<'landing' | 'customise' | 'finished'>('landing')
   const [lectureLink, setLectureLink] = useState("")
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [topicSummaries, setTopicSummaries] = useState<TopicSummary[]>([])
-  const [selectedTopics, setSelectedTopics] = useState<Set<number>>(new Set())
   const [videoFormat, setVideoFormat] = useState<VideoFormat>('summary')
   const [backgroundVideo, setBackgroundVideo] = useState<BackgroundVideo>('subway')
-  const [videoStyle, setVideoStyle] = useState<VideoStyle>('brainrot')
-  const [captionOptions, setCaptionOptions] = useState<CaptionOptions>({
-    font: 'Arial Black',
-    size: 'medium',
-    position: 'bottom'
+  const [videoStyle, setVideoStyle] = useState<VideoStyle>('academic')
+  const [voiceOptions, setVoiceOptions] = useState<VoiceOptions>({
+    style: 'academic',
+    character: 'bella'
   })
+  const [captionOptions, setCaptionOptions] = useState<CaptionOptions>({
+    font: 'Impact',
+    size: 'small',
+    position: 'top'
+  })
+  const [topics, setTopics] = useState<Topic[]>([])
+  const [topicSummaries, setTopicSummaries] = useState<TopicSummary[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState("")
 
@@ -44,6 +56,15 @@ export default function Home() {
     if (e.target.files && e.target.files[0]) {
       setUploadedFile(e.target.files[0])
     }
+  }
+
+  // Voice option setters
+  const setVoiceStyle = (style: VoiceStyle) => {
+    setVoiceOptions(prev => ({ ...prev, style }))
+  }
+
+  const setVoiceCharacter = (character: VoiceCharacter) => {
+    setVoiceOptions(prev => ({ ...prev, character }))
   }
 
   // Caption option setters
@@ -59,16 +80,7 @@ export default function Home() {
     setCaptionOptions(prev => ({ ...prev, position }))
   }
 
-  // Updated: Landing page now just goes to customise (no processing)
-  const goToCustomise = () => {
-    if (!lectureLink.trim() && !uploadedFile) {
-      alert("Please provide a lecture link or upload a file!")
-      return
-    }
-    setCurrentState('customise')
-  }
-
-  // Updated: Process input and generate topics from customise page
+  // Generate topics from landing page and go to customise
   const processInputAndGenerateTopics = async () => {
     if (!lectureLink.trim() && !uploadedFile) {
       alert("Please provide a lecture link or upload a file!")
@@ -83,7 +95,7 @@ export default function Home() {
       if (uploadedFile) {
         const formData = new FormData()
         formData.append('pdf', uploadedFile)
-        formData.append('videoStyle', videoStyle || 'brainrot')
+        formData.append('videoStyle', videoStyle || 'academic')
         
         response = await fetch('/api/pdfUpload', {
           method: 'POST',
@@ -97,7 +109,7 @@ export default function Home() {
           },
           body: JSON.stringify({
             youtubeUrl: lectureLink,
-            videoStyle: videoStyle || 'brainrot',
+            videoStyle: videoStyle || 'academic',
           }),
         })
       }
@@ -108,7 +120,16 @@ export default function Home() {
 
       const data = await response.json()
       setTopicSummaries(data.summaries)
-      setCurrentState('topics')
+      
+      // Convert summaries to topics for the UI
+      const generatedTopics: Topic[] = data.summaries.map((summary: TopicSummary, index: number) => ({
+        id: `topic_${index}`,
+        title: summary.topicTitle,
+        selected: index === 0 // Select first topic by default
+      }))
+      
+      setTopics(generatedTopics)
+      setCurrentState('customise')
       
     } catch (error) {
       console.error('Error processing input:', error)
@@ -118,19 +139,11 @@ export default function Home() {
     }
   }
 
-  const handleTopicToggle = (topicIndex: number) => {
-    const newSelected = new Set(selectedTopics)
-    if (newSelected.has(topicIndex)) {
-      newSelected.delete(topicIndex)
-    } else {
-      newSelected.add(topicIndex)
-    }
-    setSelectedTopics(newSelected)
-  }
-
-  // Updated: Generate reel from topics page and go to finished
-  const generateReelFromTopics = async () => {
-    if (selectedTopics.size === 0) {
+  // Generate video from customise page
+  const generateReel = async () => {
+    const selectedTopics = topics.filter(topic => topic.selected)
+    
+    if (selectedTopics.length === 0) {
       alert("Please select at least one topic!")
       return
     }
@@ -138,30 +151,35 @@ export default function Home() {
     setIsProcessing(true)
     
     try {
-      const selectedSummaries = topicSummaries.filter(summary => selectedTopics.has(summary.topicIndex))
+      // Filter summaries based on selected topics
+      const selectedSummaries = topicSummaries.filter(summary => 
+        selectedTopics.some(topic => topic.title === summary.topicTitle)
+      )
       
-      const response = await fetch('/api/createVideo', {
+      // Generate video with selected summaries
+      const videoResponse = await fetch('/api/createVideo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          summaries: selectedSummaries,
-          backgroundVideo: backgroundVideo === 'subway' ? 'subway' : 'minecraft',
+          summaries: selectedSummaries.length > 0 ? selectedSummaries : topicSummaries.slice(0, selectedTopics.length),
+          backgroundVideo: backgroundVideo === 'subway' ? 'subway' : backgroundVideo === 'minecraft' ? 'minecraft' : 'mega-ramp',
           voiceEnabled: true,
           videoFormat,
           videoStyle,
+          voiceOptions,
           captionOptions
         }),
       })
 
-      if (!response.ok) {
+      if (!videoResponse.ok) {
         throw new Error('Failed to generate video')
       }
 
-      const data = await response.json()
-      if (data.videos && data.videos.length > 0 && data.videos[0].videoUrl) {
-        setGeneratedVideoUrl(data.videos[0].videoUrl)
+      const videoData = await videoResponse.json()
+      if (videoData.videos && videoData.videos.length > 0 && videoData.videos[0].videoUrl) {
+        setGeneratedVideoUrl(videoData.videos[0].videoUrl)
         setCurrentState('finished')
       }
       
@@ -177,17 +195,21 @@ export default function Home() {
     setCurrentState('landing')
     setLectureLink("")
     setUploadedFile(null)
-    setTopicSummaries([])
-    setSelectedTopics(new Set())
     setGeneratedVideoUrl("")
     setVideoFormat('summary')
     setBackgroundVideo('subway')
-    setVideoStyle('brainrot')
-    setCaptionOptions({
-      font: 'Arial Black',
-      size: 'medium',
-      position: 'bottom'
+    setVideoStyle('academic')
+    setVoiceOptions({
+      style: 'academic',
+      character: 'bella'
     })
+    setCaptionOptions({
+      font: 'Impact',
+      size: 'small',
+      position: 'top'
+    })
+    setTopics([])
+    setTopicSummaries([])
   }
 
   const renderCurrentState = () => {
@@ -199,8 +221,8 @@ export default function Home() {
             setLectureLink={setLectureLink}
             uploadedFile={uploadedFile}
             handleFileUpload={handleFileUpload}
-            processInput={goToCustomise}
-            isProcessing={false} // No processing on landing page now
+            processInput={processInputAndGenerateTopics}
+            isProcessing={isProcessing}
             removeUploadedFile={() => setUploadedFile(null)}
           />
         )
@@ -213,24 +235,17 @@ export default function Home() {
             setBackgroundVideo={setBackgroundVideo}
             videoStyle={videoStyle}
             setVideoStyle={setVideoStyle}
+            voiceOptions={voiceOptions}
+            setVoiceStyle={setVoiceStyle}
+            setVoiceCharacter={setVoiceCharacter}
             captionOptions={captionOptions}
             setCaptionFont={setCaptionFont}
             setCaptionSize={setCaptionSize}
             setCaptionPosition={setCaptionPosition}
-            generateReel={processInputAndGenerateTopics}
+            topics={topics}
+            setTopics={setTopics}
+            generateReel={generateReel}
             isProcessing={isProcessing}
-          />
-        )
-      case 'topics':
-        return (
-          <TopicsPage
-            topicSummaries={topicSummaries}
-            selectedTopics={selectedTopics}
-            handleTopicToggle={handleTopicToggle}
-            continueToCustomise={generateReelFromTopics}
-            isProcessing={isProcessing}
-            backgroundVideo={backgroundVideo}
-            captionOptions={captionOptions}
           />
         )
       case 'finished':
@@ -247,8 +262,8 @@ export default function Home() {
             setLectureLink={setLectureLink}
             uploadedFile={uploadedFile}
             handleFileUpload={handleFileUpload}
-            processInput={goToCustomise}
-            isProcessing={false}
+            processInput={processInputAndGenerateTopics}
+            isProcessing={isProcessing}
             removeUploadedFile={() => setUploadedFile(null)}
           />
         )

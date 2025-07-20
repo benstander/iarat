@@ -37,6 +37,18 @@ export class FFmpegVideoRenderer {
   private static readonly DEFAULT_FONT_SIZE = 26;
   private static readonly DEFAULT_FONT_FAMILY = 'Arial Black';
 
+  /**
+   * Convert caption font to FFmpeg font family
+   */
+  private static getCaptionFontFamily(font: string): string {
+    switch (font) {
+      case 'Impact': return 'Impact';
+      case 'Bebas Neue': return 'Arial Black'; // Fallback for Bebas Neue
+      case 'Arial': 
+      default: return 'Arial Black';
+    }
+  }
+
   // FFmpeg optimization settings
   private static readonly VIDEO_PRESET = 'veryfast'; // Faster encoding
   private static readonly VIDEO_CRF = 28; // Slightly reduced quality for better speed
@@ -52,10 +64,9 @@ export class FFmpegVideoRenderer {
    */
   private static getCaptionFontSize(size: string): number {
     switch (size) {
-      case 'small': return 20;
-      case 'medium': return 26;
-      case 'large': return 32;
-      case 'extra-large': return 40;
+      case 'small': return 22;
+      case 'medium': return 28;
+      case 'large': return 36;
       default: return this.DEFAULT_FONT_SIZE;
     }
   }
@@ -759,7 +770,7 @@ export class FFmpegVideoRenderer {
 
     // Get caption styling options
     const fontSize = captionOptions ? this.getCaptionFontSize(captionOptions.size) : this.DEFAULT_FONT_SIZE;
-    const fontFamily = captionOptions?.font || this.DEFAULT_FONT_FAMILY;
+    const fontFamily = this.getCaptionFontFamily(captionOptions?.font || 'Arial');
     const positioning = captionOptions ? this.getCaptionPositioning(captionOptions.position) : { alignment: 2, marginV: 100 };
 
     // Use stream_loop for more reliable looping
