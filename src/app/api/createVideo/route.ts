@@ -10,7 +10,6 @@ import { generateScriptForTopic } from '@/lib/topic-processing';
 export const maxDuration = 300; // 5 minutes for video generation
 
 // Video duration constants
-const MAX_VIDEO_DURATION_SECONDS = 60; // Absolute maximum: 1 minute
 const FALLBACK_DURATION_SECONDS = 20;  // For text-only videos
 
 // Utility: Replace 'fr' with 'for real' for TTS (standalone word, case-insensitive)
