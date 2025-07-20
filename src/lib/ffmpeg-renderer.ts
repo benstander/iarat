@@ -8,12 +8,6 @@ import { googleSTTService } from './google-stt';
 import type { WordTimestamp } from './voice-generation';
 import crypto from 'crypto';
 
-export interface CaptionOptions {
-  font: string;
-  size: string;
-  position: string;
-}
-
 export interface FFmpegVideoOptions {
   script: string;
   backgroundVideo: string;
@@ -21,7 +15,6 @@ export interface FFmpegVideoOptions {
   audioDurationInSeconds: number;
   outputPath: string;
   wordTimestamps?: WordTimestamp[]; // Add timing data from ElevenLabs
-  captionOptions?: CaptionOptions; // Add caption customization options
 }
 
 export interface CaptionChunk {
@@ -37,17 +30,13 @@ export class FFmpegVideoRenderer {
   private static readonly DEFAULT_FONT_SIZE = 26;
   private static readonly DEFAULT_FONT_FAMILY = 'Arial Black';
 
-  /**
-   * Convert caption font to FFmpeg font family
-   */
-  private static getCaptionFontFamily(font: string): string {
-    switch (font) {
-      case 'Impact': return 'Impact';
-      case 'Bebas Neue': return 'Arial Black'; // Fallback for Bebas Neue
-      case 'Arial': 
-      default: return 'Arial Black';
-    }
-  }
+  // Fixed caption settings - no more customization
+  private static readonly CAPTION_FONT = 'Impact';
+  private static readonly CAPTION_SIZE = 18; // Medium size 
+  private static readonly CAPTION_POSITION = { alignment: 8, marginV: 900 }; // Middle center (both horizontal and vertical)
+  private static readonly CAPTION_BOLD = 1; // Always bold
+  private static readonly CAPTION_OUTLINE = 2; // Medium outline
+  private static readonly CAPTION_SHADOW = 1; // Light shadow
 
   // FFmpeg optimization settings
   private static readonly VIDEO_PRESET = 'veryfast'; // Faster encoding
@@ -58,34 +47,6 @@ export class FFmpegVideoRenderer {
   // Cache settings
   private static readonly CACHE_DIR = path.join(process.cwd(), 'cache', 'background-videos');
   private static readonly CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
-
-  /**
-   * Convert caption size to FFmpeg font size
-   */
-  private static getCaptionFontSize(size: string): number {
-    switch (size) {
-      case 'small': return 22;
-      case 'medium': return 28;
-      case 'large': return 36;
-      default: return this.DEFAULT_FONT_SIZE;
-    }
-  }
-
-  /**
-   * Convert caption position to FFmpeg alignment and margin
-   */
-  private static getCaptionPositioning(position: string): { alignment: number; marginV: number } {
-    switch (position) {
-      case 'top': 
-        return { alignment: 8, marginV: 100 }; // Top center
-      case 'middle': 
-        return { alignment: 5, marginV: 0 };   // Middle center
-      case 'bottom': 
-        return { alignment: 2, marginV: 100 }; // Bottom center
-      default: 
-        return { alignment: 2, marginV: 100 }; // Default to bottom
-    }
-  }
 
   /**
    * Initialize cache directory
@@ -702,7 +663,7 @@ export class FFmpegVideoRenderer {
    * Render video using FFmpeg with improved reliability
    */
   static async renderVideo(options: FFmpegVideoOptions): Promise<void> {
-    const { script, backgroundVideo, voiceAudio, audioDurationInSeconds, outputPath, captionOptions } = options;
+    const { script, backgroundVideo, voiceAudio, audioDurationInSeconds, outputPath, wordTimestamps } = options;
     
     console.log('Starting FFmpeg video render with optimized settings...');
     console.log('Options:', { 
@@ -711,6 +672,9 @@ export class FFmpegVideoRenderer {
       voiceAudio: this.isUrl(voiceAudio) ? 'URL' : voiceAudio,
       audioDurationInSeconds 
     });
+
+    // Debug caption options
+    console.log('Caption options received:', wordTimestamps);
 
     // Handle background video - download if it's a URL
     let localBackgroundVideo = backgroundVideo;
@@ -739,11 +703,11 @@ export class FFmpegVideoRenderer {
     // Generate captions with priority: ElevenLabs timestamps > Audio transcription > Script estimation
     let captions: CaptionChunk[] = [];
     
-    if (options.wordTimestamps && options.wordTimestamps.length > 0) {
+    if (wordTimestamps && wordTimestamps.length > 0) {
       // Use precise ElevenLabs word timestamps (best option)
       console.log('Using ElevenLabs word timestamps for caption generation...');
       try {
-        captions = this.generateCaptionsFromElevenLabsTimestamps(options.wordTimestamps);
+        captions = this.generateCaptionsFromElevenLabsTimestamps(wordTimestamps);
         console.log(`Generated ${captions.length} caption chunks from ElevenLabs word timestamps`);
       } catch (error) {
         console.warn('Failed to generate captions from ElevenLabs timestamps, falling back:', error);
@@ -768,10 +732,18 @@ export class FFmpegVideoRenderer {
     const subtitlePath = path.join(path.dirname(outputPath), `subtitles_${Date.now()}.srt`);
     await this.createSubtitleFile(captions, subtitlePath);
 
-    // Get caption styling options
-    const fontSize = captionOptions ? this.getCaptionFontSize(captionOptions.size) : this.DEFAULT_FONT_SIZE;
-    const fontFamily = this.getCaptionFontFamily(captionOptions?.font || 'Arial');
-    const positioning = captionOptions ? this.getCaptionPositioning(captionOptions.position) : { alignment: 2, marginV: 100 };
+    // Get caption styling options with detailed logging
+    const fontSize = this.CAPTION_SIZE;
+    const fontFamily = this.CAPTION_FONT;
+    const boldSetting = this.CAPTION_BOLD;
+    const positioning = this.CAPTION_POSITION;
+    
+    console.log('Caption styling applied (fixed settings):');
+    console.log(`- Font: ${fontFamily} (fixed)`);
+    console.log(`- Size: ${fontSize}px (fixed)`);
+    console.log(`- Bold: ${boldSetting} (fixed)`);
+    console.log(`- Outline: ${this.CAPTION_OUTLINE}px outline, ${this.CAPTION_SHADOW}px shadow (fixed)`);
+    console.log(`- Position: alignment=${positioning.alignment}, marginV=${positioning.marginV} (fixed middle)`);
 
     // Use stream_loop for more reliable looping
     const ffmpegArgs = [
@@ -789,7 +761,7 @@ export class FFmpegVideoRenderer {
         pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
         fps=${this.FPS}[scaled];
         
-        [scaled]subtitles=${subtitlePath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}:force_style='FontName=${fontFamily},FontSize=${fontSize},PrimaryColour=&Hffffff,OutlineColour=&H000000,Outline=3,Shadow=2,Bold=1,Alignment=${positioning.alignment},MarginV=${positioning.marginV}'[with_subs];
+        [scaled]subtitles=${subtitlePath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}:force_style='FontName=${fontFamily},FontSize=${fontSize},PrimaryColour=&Hffffff,OutlineColour=&H000000,Outline=${this.CAPTION_OUTLINE},Shadow=${this.CAPTION_SHADOW},Bold=${boldSetting},Alignment=${positioning.alignment},MarginV=${positioning.marginV},MarginL=0,MarginR=0'[with_subs];
         
         [with_subs]copy[final_video];
         
@@ -908,106 +880,4 @@ export class FFmpegVideoRenderer {
     console.log(`- Gaps between captions: ${gaps}`);
     console.log(`- Overlapping captions: ${overlaps}`);
   }
-
-  /**
-   * Test audio-based caption generation
-   */
-  static async testAudioCaptionGeneration(audioPath: string): Promise<void> {
-    console.log('\n=== Testing Audio-Based Caption Generation ===');
-    console.log('Audio path:', audioPath);
-    
-    try {
-      const captions = await this.generateCaptionsFromAudio(audioPath);
-      console.log('\nGenerated captions from audio transcription:');
-      
-      captions.forEach((caption, index) => {
-        const wordCount = caption.text.split(' ').length;
-        const chunkDuration = caption.endTime - caption.startTime;
-        const timing = `${caption.startTime.toFixed(2)}s - ${caption.endTime.toFixed(2)}s`;
-        console.log(`${index + 1}. [${timing}] (${chunkDuration.toFixed(2)}s, ${wordCount} words) "${caption.text}"`);
-      });
-      
-      // Timing analysis
-      const totalCaptionTime = captions.reduce((sum, caption) => sum + (caption.endTime - caption.startTime), 0);
-      const lastCaptionEnd = captions.length > 0 ? captions[captions.length - 1].endTime : 0;
-      const coverage = lastCaptionEnd > 0 ? (totalCaptionTime / lastCaptionEnd) * 100 : 0;
-      console.log(`\nTiming Analysis:`);
-      console.log(`- Total caption time: ${totalCaptionTime.toFixed(2)}s`);
-      console.log(`- Audio duration: ${lastCaptionEnd.toFixed(2)}s`);
-      console.log(`- Coverage: ${coverage.toFixed(1)}% of audio duration`);
-      console.log(`- Average caption duration: ${(totalCaptionTime / captions.length).toFixed(2)}s`);
-      
-      // Check for gaps or overlaps
-      let gaps = 0;
-      let overlaps = 0;
-      for (let i = 0; i < captions.length - 1; i++) {
-        const current = captions[i];
-        const next = captions[i + 1];
-        if (current.endTime < next.startTime) {
-          gaps++;
-        } else if (current.endTime > next.startTime) {
-          overlaps++;
-        }
-      }
-      console.log(`- Gaps between captions: ${gaps}`);
-      console.log(`- Overlapping captions: ${overlaps}`);
-      
-    } catch (error) {
-      console.error('Failed to test audio-based caption generation:', error);
-    }
-  }
-
-  /**
-   * Test ElevenLabs timing-based caption generation
-   */
-  static testElevenLabsCaptionGeneration(wordTimestamps: WordTimestamp[]): void {
-    console.log('\n=== Testing ElevenLabs Timing-Based Caption Generation ===');
-    console.log(`Input: ${wordTimestamps.length} word timestamps`);
-    
-    // Log sample input
-    console.log('Sample word timestamps:');
-    wordTimestamps.slice(0, 10).forEach((wt, i) => {
-      console.log(`  ${i + 1}. "${wt.word}" [${wt.startTime.toFixed(2)}s - ${wt.endTime.toFixed(2)}s]`);
-    });
-    
-    try {
-      const captions = this.generateCaptionsFromElevenLabsTimestamps(wordTimestamps);
-      console.log('\nGenerated captions with ElevenLabs timing:');
-      
-      captions.forEach((caption, index) => {
-        const wordCount = caption.text.split(' ').length;
-        const chunkDuration = caption.endTime - caption.startTime;
-        const timing = `${caption.startTime.toFixed(2)}s - ${caption.endTime.toFixed(2)}s`;
-        console.log(`${index + 1}. [${timing}] (${chunkDuration.toFixed(2)}s, ${wordCount} words) "${caption.text}"`);
-      });
-      
-      // Timing analysis
-      const totalCaptionTime = captions.reduce((sum, caption) => sum + (caption.endTime - caption.startTime), 0);
-      const lastCaptionEnd = captions.length > 0 ? captions[captions.length - 1].endTime : 0;
-      const coverage = lastCaptionEnd > 0 ? (totalCaptionTime / lastCaptionEnd) * 100 : 0;
-      console.log(`\nTiming Analysis:`);
-      console.log(`- Total caption time: ${totalCaptionTime.toFixed(2)}s`);
-      console.log(`- Audio duration: ${lastCaptionEnd.toFixed(2)}s`);
-      console.log(`- Coverage: ${coverage.toFixed(1)}% of audio duration`);
-      console.log(`- Average caption duration: ${(totalCaptionTime / captions.length).toFixed(2)}s`);
-      
-      // Check for gaps or overlaps
-      let gaps = 0;
-      let overlaps = 0;
-      for (let i = 0; i < captions.length - 1; i++) {
-        const current = captions[i];
-        const next = captions[i + 1];
-        if (current.endTime < next.startTime) {
-          gaps++;
-        } else if (current.endTime > next.startTime) {
-          overlaps++;
-        }
-      }
-      console.log(`- Gaps between captions: ${gaps}`);
-      console.log(`- Overlapping captions: ${overlaps}`);
-      
-    } catch (error) {
-      console.error('Failed to test ElevenLabs caption generation:', error);
-    }
-  }
-} 
+}

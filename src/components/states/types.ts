@@ -6,17 +6,6 @@ export type VideoStyle = 'academic' | 'brainrot' | 'unhinged' | null
 export type VoiceStyle = 'academic' | 'brainrot' | 'unhinged' | null
 export type VoiceCharacter = 'bella' | 'andrew' | 'lebron' | null
 
-// Caption types
-export type CaptionFont = 'Arial' | 'Impact' | 'Bebas Neue'
-export type CaptionSize = 'small' | 'medium' | 'large'
-export type CaptionPosition = 'top' | 'middle' | 'bottom'
-
-export interface CaptionOptions {
-  font: CaptionFont
-  size: CaptionSize
-  position: CaptionPosition
-}
-
 // Voice options
 export interface VoiceOptions {
   style: VoiceStyle
@@ -30,8 +19,16 @@ export interface Topic {
   selected: boolean
 }
 
-// Tab type for navigation
-export type CustomiseTab = 'video' | 'voice' | 'captions' | 'topics'
+// Topic summary from API processing
+export interface TopicSummary {
+  topicTitle: string;
+  content: string; // Raw content for this topic
+  topicIndex: number;
+  script?: string; // Optional script that gets generated later
+}
+
+// Customise tab type
+export type CustomiseTab = 'video' | 'voice' | 'topics'
 
 export interface AppState {
   currentPage: 'landing' | 'topics' | 'customise' | 'finished'
@@ -40,7 +37,6 @@ export interface AppState {
   backgroundVideo: BackgroundVideo
   videoStyle: VideoStyle
   voiceOptions: VoiceOptions
-  captionOptions: CaptionOptions
   topics: Topic[]
   isProcessing: boolean
 } 

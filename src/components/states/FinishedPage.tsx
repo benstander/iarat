@@ -54,7 +54,7 @@ export default function FinishedPage({
 
       {/* Right Column - Generated Video */}
       <div className="flex justify-end pr-16">
-        <div className="w-74 h-[540px] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="w-74 h-[540px] rounded-2xl overflow-hidden shadow-2xl min-w-[320px]">
           {generatedVideoUrl ? (
             <video
               className="w-full h-full object-cover"

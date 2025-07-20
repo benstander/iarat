@@ -1,16 +1,14 @@
 import React, { useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { TopicSummary, BackgroundVideo, CaptionOptions, CaptionFont, CaptionSize, CaptionPosition } from "./types"
-import ProgressBar from "@/components/ui/ProgressBar"
+import { TopicSummary, BackgroundVideo } from "./types"
 
 interface TopicsPageProps {
   topicSummaries: TopicSummary[]
-  selectedTopics: Set<number>
+  selectedTopics: number[]
   handleTopicToggle: (topicIndex: number) => void
   continueToCustomise: () => void
   isProcessing: boolean
   backgroundVideo: BackgroundVideo
-  captionOptions: CaptionOptions
 }
 
 export default function TopicsPage({
@@ -19,8 +17,7 @@ export default function TopicsPage({
   handleTopicToggle,
   continueToCustomise,
   isProcessing,
-  backgroundVideo,
-  captionOptions
+  backgroundVideo
 }: TopicsPageProps) {
   const minecraftVideoRef = useRef<HTMLVideoElement>(null)
   const subwayVideoRef = useRef<HTMLVideoElement>(null)
@@ -42,26 +39,6 @@ export default function TopicsPage({
     preloadVideos()
   }, [])
 
-  // Helper function to get font size in pixels
-  const getFontSize = (size: CaptionSize) => {
-    switch (size) {
-      case 'small': return '22px'
-      case 'medium': return '28px'
-      case 'large': return '34px'
-      default: return '32px'
-    }
-  }
-
-  // Helper function to get position styling
-  const getPositionStyle = (position: CaptionPosition) => {
-    switch (position) {
-      case 'top': return { top: '25%', transform: 'translateX(-50%)' }
-      case 'middle': return { top: '50%', transform: 'translate(-50%, -50%)' }
-      case 'bottom': return { bottom: '25%', transform: 'translateX(-50%)' }
-      default: return { bottom: '10%', transform: 'translateX(-50%)' }
-    }
-  }
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
       {/* Left Column */}
@@ -73,9 +50,9 @@ export default function TopicsPage({
             {topicSummaries.map((summary, index) => (
               <div
                 key={index}
-                onClick={() => handleTopicToggle(summary.topicIndex)}
+                onClick={() => handleTopicToggle(index)}
                 className={`px-6 py-4 rounded-full border cursor-pointer transition-all duration-200 ${
-                  selectedTopics.has(summary.topicIndex)
+                  selectedTopics.includes(index)
                     ? 'border-pink-500 bg-pink-50 border-[1.5px]'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
@@ -90,7 +67,7 @@ export default function TopicsPage({
         {/* Button aligned with bottom of phone screen */}
         <Button
           onClick={continueToCustomise}
-          disabled={selectedTopics.size === 0 || isProcessing}
+          disabled={selectedTopics.length === 0 || isProcessing}
           className="w-full py-7 text-md font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-600 text-white hover:from-pink-500 hover:to-pink-700 disabled:opacity-50"
         >
           {isProcessing ? "Generating Reel..." : "Generate Reel"}
@@ -152,9 +129,11 @@ export default function TopicsPage({
           <div 
             className="absolute left-1/2 text-center max-w-[90%] px-4 pointer-events-none z-10"
             style={{
-              ...getPositionStyle(captionOptions.position),
-              fontFamily: captionOptions.font,
-              fontSize: getFontSize(captionOptions.size),
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              fontFamily: 'Impact',
+              fontSize: '18px',
               fontWeight: 'bold',
               color: 'white',
               textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8), 1px -1px 2px rgba(0, 0, 0, 0.8), -1px 1px 2px rgba(0, 0, 0, 0.8)',
@@ -162,7 +141,7 @@ export default function TopicsPage({
               wordWrap: 'break-word'
             }}
           >
-            Captions
+            CAPTIONS ALWAYS APPEAR HERE
           </div>
         </div>
       </div>

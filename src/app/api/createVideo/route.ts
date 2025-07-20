@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateVoice, saveVoiceToFile } from '@/lib/voice-generation';
-import { getRandomMinecraftVideoUrl } from '@/lib/processing';
 import { FFmpegVideoRenderer } from '@/lib/ffmpeg-renderer';
+import { generateVoice, saveVoiceToFile } from '@/lib/voice-generation';
+import { getRandomMinecraftVideoUrl, getRandomSubwayVideoUrl, getRandomMegaRampVideoUrl } from '@/lib/processing';
 import { validateScriptDuration } from '@/lib/script-generation';
-import path from 'path';
 import fs from 'fs/promises';
+import path from 'path';
+import { generateScriptForTopic } from '@/lib/topic-processing';
 
 export const maxDuration = 300; // 5 minutes for video generation
 
@@ -21,7 +22,11 @@ function replaceFrWithForReal(text: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { script, summaries, backgroundVideo, voiceEnabled = true, voiceOptions, captionOptions } = body;
+    const { script, summaries, backgroundVideo, voiceEnabled = true, voiceOptions } = body;
+
+    console.log('=== API Request Debug ===');
+    console.log('Voice options received in API:', voiceOptions);
+    console.log('Background video:', backgroundVideo);
 
     // Handle both single script and multiple summaries
     if (!script && !summaries) {
@@ -38,17 +43,29 @@ export async function POST(req: NextRequest) {
         const summary = summaries[i];
         console.log(`\n=== Generating video ${i + 1}/${summaries.length} ===`);
         console.log('Topic:', summary.topicTitle);
-        console.log('Script:', summary.script);
         
         try {
+          // Generate script now using the user's selected voice style
+          let scriptToUse = summary.script;
+          
+          if (!scriptToUse && summary.content && voiceOptions?.style) {
+            console.log(`Generating script for topic "${summary.topicTitle}" with voice style: ${voiceOptions.style}`);
+            scriptToUse = await generateScriptForTopic(summary, voiceOptions.style);
+          }
+          
+          if (!scriptToUse) {
+            throw new Error(`No script available for topic: ${summary.topicTitle}`);
+          }
+          
+          console.log('Script:', scriptToUse);
+          
           const result = await generateSingleVideo({
-            script: summary.script,
+            script: scriptToUse,
             backgroundVideo: backgroundVideo || 'minecraft',
             voiceEnabled,
             voiceOptions,
             topicTitle: summary.topicTitle,
             topicIndex: summary.topicIndex,
-            captionOptions
           });
           
           videoResults.push({
@@ -87,7 +104,6 @@ export async function POST(req: NextRequest) {
         backgroundVideo: backgroundVideo || 'minecraft',
         voiceEnabled,
         voiceOptions,
-        captionOptions
       });
       
       return NextResponse.json(result);
@@ -109,7 +125,6 @@ async function generateSingleVideo({
   voiceOptions,
   topicTitle,
   topicIndex,
-  captionOptions
 }: {
   script: string;
   backgroundVideo: string;
@@ -117,7 +132,6 @@ async function generateSingleVideo({
   voiceOptions?: { style: string; character: string };
   topicTitle?: string;
   topicIndex?: number;
-  captionOptions?: { font: string; size: string; position: string };
 }) {
   console.log('Script:', script);
   console.log('Background video:', backgroundVideo);
@@ -190,11 +204,21 @@ async function generateSingleVideo({
   // Use actual audio duration without artificial caps
   const finalDuration = audioDurationInSeconds;
 
-  // Get random minecraft video URL from Supabase
+  // Get background video URL based on selection
   let bgVideoUrl = '';
   if (backgroundVideo === 'minecraft') {
     bgVideoUrl = getRandomMinecraftVideoUrl();
     console.log('Using random minecraft video:', bgVideoUrl);
+  } else if (backgroundVideo === 'subway') {
+    bgVideoUrl = getRandomSubwayVideoUrl();
+    console.log('Using random subway video:', bgVideoUrl);
+  } else if (backgroundVideo === 'mega-ramp') {
+    bgVideoUrl = getRandomMegaRampVideoUrl();
+    console.log('Using random mega-ramp video:', bgVideoUrl);
+  } else {
+    // Fallback to minecraft if backgroundVideo is not recognized
+    bgVideoUrl = getRandomMinecraftVideoUrl();
+    console.log('Unknown background video type, falling back to minecraft:', bgVideoUrl);
   }
 
   // Create output directory
@@ -215,12 +239,11 @@ async function generateSingleVideo({
   try {
     await FFmpegVideoRenderer.renderVideoAdvanced({
       script,
-      backgroundVideo: bgVideoUrl || backgroundVideo,
+      backgroundVideo: bgVideoUrl, // Now always a proper URL
       voiceAudio: voiceAudioFilePath, // Use the full path here!
       audioDurationInSeconds: finalDuration,
       outputPath,
       wordTimestamps, // Pass ElevenLabs word timestamps for precise caption timing
-      captionOptions // Pass caption customization options
     });
   } catch (renderError) {
     console.error('FFmpeg render failed:', renderError);

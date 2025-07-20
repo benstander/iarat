@@ -9,11 +9,11 @@ const ytdl = youtubedl.create('/opt/homebrew/bin/yt-dlp');
 import fs from 'fs/promises';
 import path from 'path';
 
-export const maxDuration = 600; // Increased for long video processing (up to 10 minutes)
+export const maxDuration = 600;
 
 export async function POST(req: NextRequest) {
   try {
-    const { youtubeUrl, brainrotStyle = 'engaging and modern', videoStyle = 'brainrot' } = await req.json();
+    const { youtubeUrl } = await req.json();
 
     if (!youtubeUrl) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`Processing YouTube URL: ${youtubeUrl} (style: ${videoStyle})`);
+    console.log(`Processing YouTube URL: ${youtubeUrl}`);
 
     // Download audio using youtube-dl
     const tempDir = path.join(process.cwd(), 'temp');
@@ -133,11 +133,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Process transcript into topics and generate scripts using shared utility
+    // Process transcript into topics WITHOUT generating scripts yet
+    // Scripts will be generated later when user selects voice style
     const summaries = await processTextIntoTopics({
       textContent: extractedText,
-      brainrotStyle,
-      videoStyle,
       contentType: 'YouTube'
     });
 
@@ -145,12 +144,11 @@ export async function POST(req: NextRequest) {
       success: true,
       summaries,
       totalTopics: summaries.length,
-      message: `Successfully processed YouTube video and created ${summaries.length} topic summaries with ${videoStyle} style`
+      message: `Successfully processed YouTube video and created ${summaries.length} topic summaries. Scripts will be generated when you select your voice style.`
     });
 
   } catch (error) {
     console.error('YouTube processing error:', error);
-    
     return NextResponse.json(
       { error: 'Failed to process YouTube video' },
       { status: 500 }

@@ -10,6 +10,22 @@ const MINECRAFT_VIDEOS = [
   'mp5.mp4',
 ];
 
+const SUBWAY_VIDEOS = [
+  'ss1.mp4',
+  'ss2.mp4',
+  'ss3.mp4',
+  'ss4.mp4',
+  'ss5.mp4',
+];
+
+const MEGA_RAMP_VIDEOS = [
+  'gta1.mp4',
+  'gta2.mp4',
+  'gta3.mp4',
+  'gta4.mp4',
+  'gta5.mp4',
+];
+
 // Optimized audio download settings
 const AUDIO_QUALITY_OPTIONS: ytdl.downloadOptions = {
   filter: 'audioonly' as ytdl.Filter,
@@ -63,6 +79,26 @@ export function getRandomMinecraftVideoUrl() {
   const { data } = supabase
     .storage
     .from('background-videos')
-    .getPublicUrl(`minecraft parkour/${filename}`);
+    .getPublicUrl(`minecraft/${filename}`);
+  return data.publicUrl;
+}
+
+export function getRandomSubwayVideoUrl() {
+  const randomIndex = Math.floor(Math.random() * SUBWAY_VIDEOS.length);
+  const filename = SUBWAY_VIDEOS[randomIndex];
+  const { data } = supabase
+    .storage
+    .from('background-videos')
+    .getPublicUrl(`subway/${filename}`);
+  return data.publicUrl;
+}
+
+export function getRandomMegaRampVideoUrl() {
+  const randomIndex = Math.floor(Math.random() * MEGA_RAMP_VIDEOS.length);
+  const filename = MEGA_RAMP_VIDEOS[randomIndex];
+  const { data } = supabase
+    .storage
+    .from('background-videos')
+    .getPublicUrl(`gta/${filename}`);
   return data.publicUrl;
 }

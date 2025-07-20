@@ -10,11 +10,6 @@ import {
 import { 
   VideoFormat, 
   BackgroundVideo, 
-  VideoStyle, 
-  CaptionOptions, 
-  CaptionFont, 
-  CaptionSize, 
-  CaptionPosition,
   VoiceOptions,
   VoiceStyle,
   VoiceCharacter,
@@ -27,15 +22,9 @@ interface CustomisePageProps {
   setVideoFormat: (format: VideoFormat) => void
   backgroundVideo: BackgroundVideo
   setBackgroundVideo: (bg: BackgroundVideo) => void
-  videoStyle: VideoStyle
-  setVideoStyle: (style: VideoStyle) => void
   voiceOptions: VoiceOptions
   setVoiceStyle: (style: VoiceStyle) => void
   setVoiceCharacter: (character: VoiceCharacter) => void
-  captionOptions: CaptionOptions
-  setCaptionFont: (font: CaptionFont) => void
-  setCaptionSize: (size: CaptionSize) => void
-  setCaptionPosition: (position: CaptionPosition) => void
   topics: Topic[]
   setTopics: (topics: Topic[]) => void
   generateReel: () => void
@@ -47,15 +36,9 @@ export default function CustomisePage({
   setVideoFormat,
   backgroundVideo,
   setBackgroundVideo,
-  videoStyle,
-  setVideoStyle,
   voiceOptions,
   setVoiceStyle,
   setVoiceCharacter,
-  captionOptions,
-  setCaptionFont,
-  setCaptionSize,
-  setCaptionPosition,
   topics,
   setTopics,
   generateReel,
@@ -82,39 +65,24 @@ export default function CustomisePage({
     preloadVideos()
   }, [])
 
-  // Helper function to get font size in pixels
-  const getFontSize = (size: CaptionSize) => {
-    switch (size) {
-      case 'small': return '22px'
-      case 'medium': return '28px'
-      case 'large': return '34px'
-      default: return '32px'
-    }
-  }
-
-  // Helper function to get position styling
-  const getPositionStyle = (position: CaptionPosition) => {
-    switch (position) {
-      case 'top': return { top: '25%', transform: 'translateX(-50%)' }
-      case 'middle': return { top: '50%', transform: 'translate(-50%, -50%)' }
-      case 'bottom': return { bottom: '25%', transform: 'translateX(-50%)' }
-      default: return { bottom: '10%', transform: 'translateX(-50%)' }
-    }
-  }
-
-  // Toggle topic selection
+  // Toggle topic selection (single selection only)
   const toggleTopic = (topicId: string) => {
-    setTopics(topics.map(topic => 
-      topic.id === topicId ? { ...topic, selected: !topic.selected } : topic
-    ))
+    setTopics(topics.map(topic => {
+      if (topic.id === topicId) {
+        // If clicking the already selected topic, deselect it
+        return { ...topic, selected: !topic.selected }
+      } else {
+        // Deselect all other topics
+        return { ...topic, selected: false }
+      }
+    }))
   }
 
   // Get continue button text based on current tab
   const getContinueButtonText = () => {
     switch (currentTab) {
       case 'video': return 'Continue to voice'
-      case 'voice': return 'Continue to captions'
-      case 'captions': return 'Continue to topics'
+      case 'voice': return 'Continue to topics'
       case 'topics': return isProcessing ? 'Generating video...' : 'Generate video'
       default: return 'Continue'
     }
@@ -127,15 +95,12 @@ export default function CustomisePage({
         setCurrentTab('voice')
         break
       case 'voice':
-        setCurrentTab('captions')
-        break
-      case 'captions':
         setCurrentTab('topics')
         break
       case 'topics':
         const selectedTopics = topics.filter(topic => topic.selected)
         if (selectedTopics.length === 0) {
-          alert("Please select at least one topic!")
+          alert("Please select a topic!")
           return
         }
         generateReel()
@@ -150,7 +115,7 @@ export default function CustomisePage({
           <div className="space-y-8">
             {/* Video Format */}
             <div className="space-y-4">
-              <h3 className="text-md font-semibold">Video Format</h3>
+              <h3 className="text-md font-medium">Video format</h3>
               <div className="flex gap-4 w-full">
                 {([
                   { value: 'summary', label: 'Summary' },
@@ -175,7 +140,7 @@ export default function CustomisePage({
 
             {/* Background video */}
             <div className="space-y-4">
-              <h3 className="text-md font-semibold">Background video</h3>
+              <h3 className="text-md font-medium">Background video</h3>
               <div className="flex gap-4 w-full">
                 {(['minecraft', 'subway', 'mega-ramp'] as const).map((bg) => (
                   <Button
@@ -204,7 +169,7 @@ export default function CustomisePage({
           <div className="space-y-8">
             {/* Voice style */}
             <div className="space-y-4">
-              <h3 className="text-md font-semibold">Voice style</h3>
+              <h3 className="text-md font-medium">Voice style</h3>
               <div className="flex gap-4 w-full">
                 {(['academic', 'brainrot', 'unhinged'] as const).map((style) => (
                   <Button
@@ -225,7 +190,7 @@ export default function CustomisePage({
 
             {/* Voice character */}
             <div className="space-y-4">
-              <h3 className="text-md font-semibold">Voice character</h3>
+              <h3 className="text-md font-medium">Voice character</h3>
               <div className="flex gap-4 w-full">
                 {(['bella', 'andrew', 'lebron'] as const).map((character) => (
                   <Button
@@ -246,77 +211,10 @@ export default function CustomisePage({
           </div>
         )
 
-      case 'captions':
-        return (
-          <div className="space-y-6">
-            {/* Font */}
-            <div className="space-y-4">
-              <h3 className="text-md font-semibold">Font</h3>
-              <div className="flex gap-4 w-full">
-                {(['Arial', 'Impact', 'Bebas Neue'] as const).map((font) => (
-                  <Button
-                    key={font}
-                    onClick={() => setCaptionFont(font)}
-                    variant="outline"
-                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border ${
-                      captionOptions.font === font
-                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {font}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Text size */}
-            <div className="space-y-4">
-              <h3 className="text-md font-semibold">Text size</h3>
-              <div className="flex gap-4 w-full">
-                {(['small', 'medium', 'large'] as const).map((size) => (
-                  <Button
-                    key={size}
-                    onClick={() => setCaptionSize(size)}
-                    variant="outline"
-                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border capitalize ${
-                      captionOptions.size === size
-                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {size}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Caption position */}
-            <div className="space-y-4">
-              <h3 className="text-md font-semibold">Caption position</h3>
-              <div className="flex gap-4 w-full">
-                {(['top', 'middle', 'bottom'] as const).map((position) => (
-                  <Button
-                    key={position}
-                    onClick={() => setCaptionPosition(position)}
-                    variant="outline"
-                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border capitalize ${
-                      captionOptions.position === position
-                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {position}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )
-
       case 'topics':
         return (
-          <div className="space-y-3 pr-2">
+          <div className="space-y-4 pr-2">
+            <h3 className="text-md font-medium">Generated topics</h3>
             {topics.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
                 <p>No topics available. Please go back to the landing page to process your content.</p>
@@ -326,10 +224,10 @@ export default function CustomisePage({
                 <div
                   key={topic.id}
                   onClick={() => toggleTopic(topic.id)}
-                  className={`w-full px-6 py-4 rounded-full text-sm text-black font-medium bg-white border capitalize cursor-pointer ${
+                  className={`w-full px-6 py-4 rounded-full text-sm text-black font-medium border capitalize cursor-pointer ${
                     topic.selected
                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
-                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                       : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-100'
                   }`}
                 >
                   {topic.title}
@@ -351,11 +249,11 @@ export default function CustomisePage({
         {/* Tab Navigation */}
         <div className="flex flex-col h-full">
           <div className="flex border-b border-gray-200 mb-6">
-            {(['video', 'voice', 'captions', 'topics'] as const).map((tab) => (
+            {(['video', 'voice', 'topics'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setCurrentTab(tab)}
-                className={`flex-1 pb-5 text-md font-medium capitalize transition-colors relative ${
+                className={`flex-1 pb-4 text-md font-medium capitalize transition-colors relative ${
                   currentTab === tab
                     ? 'text-pink-500'
                     : 'text-gray-500 hover:text-gray-700'
@@ -363,7 +261,7 @@ export default function CustomisePage({
               >
                 {tab}
                 {currentTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-500" />
+                  <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-pink-500 rounded-sm" />
                 )}
               </button>
             ))}
@@ -387,7 +285,7 @@ export default function CustomisePage({
 
       {/* Right Column - Video Preview with Caption Overlay */}
       <div className="col-span-1 flex justify-end pr-16">
-        <div className="h-[560px] rounded-2xl overflow-hidden shadow-2xl relative min-w-[300px]">
+        <div className="h-[560px] rounded-2xl overflow-hidden shadow-2xl relative min-w-[320px]">
           {/* Minecraft Video - cached and preloaded */}
           <video
             ref={minecraftVideoRef}
@@ -440,17 +338,19 @@ export default function CustomisePage({
           <div 
             className="absolute left-1/2 text-center max-w-[90%] px-4 pointer-events-none z-10"
             style={{
-              ...getPositionStyle(captionOptions.position),
-              fontFamily: captionOptions.font === 'Bebas Neue' ? 'var(--font-bebas-neue)' : captionOptions.font,
-              fontSize: getFontSize(captionOptions.size),
-              fontWeight: captionOptions.font === 'Bebas Neue' ? 'normal' : 'bold',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              fontFamily: 'Impact',
+              fontSize: '18px',
+              fontWeight: 'bold',
               color: 'white',
               textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8), 1px -1px 2px rgba(0, 0, 0, 0.8), -1px 1px 2px rgba(0, 0, 0, 0.8)',
               lineHeight: '1.2',
               wordWrap: 'break-word'
             }}
           >
-            Your captions
+            CAPTIONS ALWAYS APPEAR HERE
           </div>
         </div>
       </div>

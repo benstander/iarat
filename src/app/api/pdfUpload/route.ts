@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processTextIntoTopics } from '@/lib/topic-processing';
 
-export const maxDuration = 60; // Increased for multiple topic processing
+export const maxDuration = 300; // Increased for multiple topic processing
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('pdf') as File;
-    const brainrotStyle = formData.get('brainrotStyle') as string || 'engaging and modern';
-    const videoStyle = formData.get('videoStyle') as 'brainrot' | 'academic' | 'unhinged' || 'brainrot';
 
     if (!file) {
       return NextResponse.json(
@@ -33,7 +31,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`Processing PDF file: ${file.name} (${file.size} bytes, style: ${videoStyle})`);
+    console.log(`Processing PDF file: ${file.name} (${file.size} bytes)`);
 
     // Convert File to Buffer for pdf-parse
     const arrayBuffer = await file.arrayBuffer();
@@ -53,11 +51,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Process text into topics and generate scripts using shared utility
+    // Process text into topics WITHOUT generating scripts yet
+    // Scripts will be generated later when user selects voice style
     const summaries = await processTextIntoTopics({
       textContent: extractedText,
-      brainrotStyle,
-      videoStyle,
       contentType: 'PDF'
     });
 
@@ -65,7 +62,7 @@ export async function POST(req: NextRequest) {
       success: true,
       summaries,
       totalTopics: summaries.length,
-      message: `Successfully processed PDF and created ${summaries.length} topic summaries with ${videoStyle} style`
+      message: `Successfully processed PDF and created ${summaries.length} topic summaries. Scripts will be generated when you select your voice style.`
     });
 
   } catch (error) {

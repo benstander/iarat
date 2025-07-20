@@ -1,36 +1,33 @@
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { generateVideoScript } from './script-generation';
+import { TopicSummary } from '@/components/states/types';
 
-// Helper function to clean JSON response from markdown
-function cleanJsonResponse(text: string): string {
-  // Remove markdown code blocks if present
-  const cleaned = text.replace(/```json\s*|\s*```/g, '').trim();
-  return cleaned;
-}
-
-export interface TopicSummary {
-  topicTitle: string;
-  script: string;
-  topicIndex: number;
+// Clean JSON response to handle potential formatting issues
+function cleanJsonResponse(jsonText: string): string {
+  // Remove any non-JSON content before and after the JSON array
+  const jsonStart = jsonText.indexOf('[');
+  const jsonEnd = jsonText.lastIndexOf(']');
+  
+  if (jsonStart === -1 || jsonEnd === -1) {
+    throw new Error('No valid JSON array found in response');
+  }
+  
+  return jsonText.substring(jsonStart, jsonEnd + 1);
 }
 
 interface ProcessTopicsParams {
   textContent: string;
-  brainrotStyle?: string;
-  videoStyle?: 'brainrot' | 'academic' | 'unhinged';
-  contentType?: 'PDF' | 'YouTube';
+  contentType?: string;
 }
 
 export async function processTextIntoTopics({
   textContent,
-  brainrotStyle = 'engaging and modern',
-  videoStyle = 'brainrot',
   contentType = 'PDF'
 }: ProcessTopicsParams): Promise<TopicSummary[]> {
   
   console.log('Extracted text length:', textContent.length);
-  console.log('Video style:', videoStyle);
+  console.log('Processing content type:', contentType);
 
   if (!textContent || textContent.trim().length === 0) {
     throw new Error(`No text could be extracted from the ${contentType.toLowerCase()}`);
@@ -87,38 +84,37 @@ export async function processTextIntoTopics({
 
   console.log(`Successfully split into ${topics.length} topics`);
 
-  // Step 2: Generate scripts for each topic using the shared utility
+  // Step 2: Return topics WITHOUT generating scripts yet
+  // Scripts will be generated later when user selects voice style
   const summaries: TopicSummary[] = [];
   
   for (let i = 0; i < topics.length; i++) {
     const topic = topics[i];
-    console.log(`Generating script for topic ${i + 1}: ${topic.title} (style: ${videoStyle})`);
+    console.log(`Preparing topic ${i + 1}: ${topic.title}`);
     
-    try {
-      // Use the shared script generation utility with video style
-      const script = await generateVideoScript({
-        textContent: `${topic.title}: ${topic.content}`,
-        brainrotStyle,
-        videoStyle
-      });
-
-      summaries.push({
-        topicTitle: topic.title,
-        script: script,
-        topicIndex: i + 1
-      });
-      
-    } catch (scriptError) {
-      console.error(`Error generating script for topic ${i + 1}:`, scriptError);
-      // Add a fallback summary
-      summaries.push({
-        topicTitle: topic.title,
-        script: `This topic covers ${topic.title}. ${topic.content.substring(0, 150)}...`,
-        topicIndex: i + 1
-      });
-    }
+    summaries.push({
+      topicTitle: topic.title,
+      content: topic.content,
+      topicIndex: i + 1
+      // No script generated here - will be done later with user's voice style
+    });
   }
 
-  console.log(`Generated ${summaries.length} summaries with ${videoStyle} style`);
+  console.log(`Prepared ${summaries.length} topic summaries (scripts will be generated when user selects voice style)`);
   return summaries;
+}
+
+// New function to generate script for a specific topic with voice style
+export async function generateScriptForTopic(
+  topicSummary: TopicSummary, 
+  voiceStyle: 'academic' | 'brainrot' | 'unhinged' = 'brainrot'
+): Promise<string> {
+  console.log(`Generating script for topic: ${topicSummary.topicTitle} with voice style: ${voiceStyle}`);
+  
+  const script = await generateVideoScript({
+    textContent: `${topicSummary.topicTitle}: ${topicSummary.content}`,
+    videoStyle: voiceStyle
+  });
+
+  return script;
 } 

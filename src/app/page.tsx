@@ -5,31 +5,20 @@ import { useState } from "react"
 
 // Import types and components
 import { 
+  LandingPage,
+  CustomisePage,
+  FinishedPage,
   VideoFormat, 
   BackgroundVideo, 
-  VideoStyle,
   VoiceOptions,
   VoiceStyle,
   VoiceCharacter,
-  CaptionOptions,
-  CaptionFont,
-  CaptionSize,
-  CaptionPosition,
   Topic,
-  LandingPage,
-  CustomisePage,
-  FinishedPage
+  TopicSummary
 } from "@/components/states"
 
 // Import shared components
 import Header from "@/components/shared/Header"
-
-// Interface for topic summaries from API
-interface TopicSummary {
-  topicTitle: string;
-  script: string;
-  topicIndex: number;
-}
 
 export default function Home() {
   const [currentState, setCurrentState] = useState<'landing' | 'customise' | 'finished'>('landing')
@@ -37,15 +26,9 @@ export default function Home() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [videoFormat, setVideoFormat] = useState<VideoFormat>('summary')
   const [backgroundVideo, setBackgroundVideo] = useState<BackgroundVideo>('subway')
-  const [videoStyle, setVideoStyle] = useState<VideoStyle>('academic')
   const [voiceOptions, setVoiceOptions] = useState<VoiceOptions>({
     style: 'academic',
     character: 'bella'
-  })
-  const [captionOptions, setCaptionOptions] = useState<CaptionOptions>({
-    font: 'Impact',
-    size: 'small',
-    position: 'top'
   })
   const [topics, setTopics] = useState<Topic[]>([])
   const [topicSummaries, setTopicSummaries] = useState<TopicSummary[]>([])
@@ -67,19 +50,6 @@ export default function Home() {
     setVoiceOptions(prev => ({ ...prev, character }))
   }
 
-  // Caption option setters
-  const setCaptionFont = (font: CaptionFont) => {
-    setCaptionOptions(prev => ({ ...prev, font }))
-  }
-
-  const setCaptionSize = (size: CaptionSize) => {
-    setCaptionOptions(prev => ({ ...prev, size }))
-  }
-
-  const setCaptionPosition = (position: CaptionPosition) => {
-    setCaptionOptions(prev => ({ ...prev, position }))
-  }
-
   // Generate topics from landing page and go to customise
   const processInputAndGenerateTopics = async () => {
     if (!lectureLink.trim() && !uploadedFile) {
@@ -95,7 +65,6 @@ export default function Home() {
       if (uploadedFile) {
         const formData = new FormData()
         formData.append('pdf', uploadedFile)
-        formData.append('videoStyle', videoStyle || 'academic')
         
         response = await fetch('/api/pdfUpload', {
           method: 'POST',
@@ -109,7 +78,6 @@ export default function Home() {
           },
           body: JSON.stringify({
             youtubeUrl: lectureLink,
-            videoStyle: videoStyle || 'academic',
           }),
         })
       }
@@ -167,9 +135,7 @@ export default function Home() {
           backgroundVideo: backgroundVideo === 'subway' ? 'subway' : backgroundVideo === 'minecraft' ? 'minecraft' : 'mega-ramp',
           voiceEnabled: true,
           videoFormat,
-          videoStyle,
           voiceOptions,
-          captionOptions
         }),
       })
 
@@ -198,15 +164,9 @@ export default function Home() {
     setGeneratedVideoUrl("")
     setVideoFormat('summary')
     setBackgroundVideo('subway')
-    setVideoStyle('academic')
     setVoiceOptions({
       style: 'academic',
       character: 'bella'
-    })
-    setCaptionOptions({
-      font: 'Impact',
-      size: 'small',
-      position: 'top'
     })
     setTopics([])
     setTopicSummaries([])
@@ -233,15 +193,9 @@ export default function Home() {
             setVideoFormat={setVideoFormat}
             backgroundVideo={backgroundVideo}
             setBackgroundVideo={setBackgroundVideo}
-            videoStyle={videoStyle}
-            setVideoStyle={setVideoStyle}
             voiceOptions={voiceOptions}
             setVoiceStyle={setVoiceStyle}
             setVoiceCharacter={setVoiceCharacter}
-            captionOptions={captionOptions}
-            setCaptionFont={setCaptionFont}
-            setCaptionSize={setCaptionSize}
-            setCaptionPosition={setCaptionPosition}
             topics={topics}
             setTopics={setTopics}
             generateReel={generateReel}
