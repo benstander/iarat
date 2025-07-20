@@ -31,11 +31,10 @@ export class FFmpegVideoRenderer {
   private static readonly DEFAULT_FONT_FAMILY = 'Arial Black';
 
   // Fixed caption settings - no more customization
-  private static readonly CAPTION_FONT = 'Impact';
-  private static readonly CAPTION_SIZE = 18; // Medium size 
-  private static readonly CAPTION_POSITION = { alignment: 8, marginV: 900 }; // Middle center (both horizontal and vertical)
-  private static readonly CAPTION_BOLD = 1; // Always bold
-  private static readonly CAPTION_OUTLINE = 2; // Medium outline
+  private static readonly CAPTION_FONT = 'Helvetica';
+  private static readonly CAPTION_SIZE = 100; // Size for ASS format
+  private static readonly CAPTION_BOLD = 4; // Always bold
+  private static readonly CAPTION_OUTLINE = 4; // Medium outline
   private static readonly CAPTION_SHADOW = 1; // Light shadow
 
   // FFmpeg optimization settings
@@ -632,6 +631,52 @@ export class FFmpegVideoRenderer {
   }
 
   /**
+   * Create ASS subtitle file from captions with true centered positioning
+   */
+  private static async createAssSubtitleFile(captions: CaptionChunk[], outputPath: string): Promise<string> {
+    // ASS file header with proper resolution and styling
+    const assHeader = `[Script Info]
+Title: Generated Subtitles
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,${this.CAPTION_FONT},${this.CAPTION_SIZE},&Hffffff,&Hffffff,&H000000,&H000000,${this.CAPTION_BOLD},0,0,0,100,100,0,0,1,${this.CAPTION_OUTLINE},${this.CAPTION_SHADOW},5,60,60,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+`;
+
+    // Convert captions to ASS format
+    const assEvents = captions.map((caption) => {
+      const startTime = this.formatAssTime(caption.startTime);
+      const endTime = this.formatAssTime(caption.endTime);
+      
+      return `Dialogue: 0,${startTime},${endTime},Default,,0,0,0,,${caption.text}`;
+    }).join('\n');
+
+    const assContent = assHeader + assEvents + '\n';
+
+    await fs.writeFile(outputPath, assContent, 'utf8');
+    console.log(`Created ASS subtitle file with ${captions.length} captions at: ${outputPath}`);
+    return outputPath;
+  }
+
+  /**
+   * Format time for ASS format (H:MM:SS.CC)
+   */
+  private static formatAssTime(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    const centiseconds = Math.floor((seconds % 1) * 100);
+    
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+  }
+
+  /**
    * Create SRT subtitle file from captions
    */
   private static async createSubtitleFile(captions: CaptionChunk[], outputPath: string): Promise<string> {
@@ -728,22 +773,12 @@ export class FFmpegVideoRenderer {
       }
     }
 
-    // Create temporary subtitle file
-    const subtitlePath = path.join(path.dirname(outputPath), `subtitles_${Date.now()}.srt`);
-    await this.createSubtitleFile(captions, subtitlePath);
+    // Create temporary ASS subtitle file
+    const assPath = path.join(path.dirname(outputPath), `subtitles_${Date.now()}.ass`);
+    await this.createAssSubtitleFile(captions, assPath);
 
-    // Get caption styling options with detailed logging
-    const fontSize = this.CAPTION_SIZE;
-    const fontFamily = this.CAPTION_FONT;
-    const boldSetting = this.CAPTION_BOLD;
-    const positioning = this.CAPTION_POSITION;
-    
-    console.log('Caption styling applied (fixed settings):');
-    console.log(`- Font: ${fontFamily} (fixed)`);
-    console.log(`- Size: ${fontSize}px (fixed)`);
-    console.log(`- Bold: ${boldSetting} (fixed)`);
-    console.log(`- Outline: ${this.CAPTION_OUTLINE}px outline, ${this.CAPTION_SHADOW}px shadow (fixed)`);
-    console.log(`- Position: alignment=${positioning.alignment}, marginV=${positioning.marginV} (fixed middle)`);
+    console.log('Using ASS subtitles (centered)');
+    console.log(`ASS path: ${assPath}`);
 
     // Use stream_loop for more reliable looping
     const ffmpegArgs = [
@@ -761,9 +796,7 @@ export class FFmpegVideoRenderer {
         pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
         fps=${this.FPS}[scaled];
         
-        [scaled]subtitles=${subtitlePath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}:force_style='FontName=${fontFamily},FontSize=${fontSize},PrimaryColour=&Hffffff,OutlineColour=&H000000,Outline=${this.CAPTION_OUTLINE},Shadow=${this.CAPTION_SHADOW},Bold=${boldSetting},Alignment=${positioning.alignment},MarginV=${positioning.marginV},MarginL=0,MarginR=0'[with_subs];
-        
-        [with_subs]copy[final_video];
+        [scaled]ass='${assPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'[v];
         
         [1:a]volume=1.0[voice_audio];
         [0:a]volume=0.2[bg_audio];
@@ -771,7 +804,7 @@ export class FFmpegVideoRenderer {
       `.replace(/\s+/g, ' ').trim(),
       
       // Optimized output settings
-      '-map', '[final_video]',
+      '-map', '[v]',
       '-map', '[audio_out]',
       '-c:v', 'libx264',
       '-preset', this.VIDEO_PRESET,
@@ -812,7 +845,7 @@ export class FFmpegVideoRenderer {
         if (tempVoiceAudio) {
           cleanupPromises.push(fs.unlink(tempVoiceAudio).catch(() => {}));
         }
-        cleanupPromises.push(fs.unlink(subtitlePath).catch(() => {}));
+        cleanupPromises.push(fs.unlink(assPath).catch(() => {}));
         
         await Promise.all(cleanupPromises);
 

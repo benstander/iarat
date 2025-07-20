@@ -111,7 +111,7 @@ export default function LandingPage({
 
       {/* Right Column - Video Preview */}
       <div className="flex justify-end pr-16">
-        <div className="w-74 h-[540px] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="w-74 h-[540px] rounded-2xl overflow-hidden shadow-2xl relative">
           <video
             className="w-full h-full object-cover"
             autoPlay
@@ -122,6 +122,7 @@ export default function LandingPage({
           >
             Your browser does not support the video tag.
           </video>
+
         </div>
       </div>
     </div>

@@ -119,6 +119,7 @@ STRUCTURE REQUIREMENTS:
 - Include concrete examples and analogies
 - Cover the key points with good explanations
 - Balance education with engagement
+- NEVER use em dashes. Use commas instead.
 
 CRITICAL REQUIREMENTS:
 - ${stylePrompt.languageBalance}
