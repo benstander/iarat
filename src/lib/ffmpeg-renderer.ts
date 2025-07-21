@@ -8,6 +8,12 @@ import { googleSTTService } from './google-stt';
 import type { WordTimestamp } from './voice-generation';
 import crypto from 'crypto';
 
+export interface CaptionCustomization {
+  font?: 'calibri' | 'arial' | 'impact' | null;
+  textSize?: 'small' | 'medium' | 'large' | null;
+  position?: 'top' | 'middle' | 'bottom' | null;
+}
+
 export interface FFmpegVideoOptions {
   script: string;
   backgroundVideo: string;
@@ -15,6 +21,7 @@ export interface FFmpegVideoOptions {
   audioDurationInSeconds: number;
   outputPath: string;
   wordTimestamps?: WordTimestamp[]; // Add timing data from ElevenLabs
+  captionOptions?: CaptionCustomization; // Add caption customization
 }
 
 export interface CaptionChunk {
@@ -30,9 +37,39 @@ export class FFmpegVideoRenderer {
   private static readonly DEFAULT_FONT_SIZE = 26;
   private static readonly DEFAULT_FONT_FAMILY = 'Arial Black';
 
-  // Fixed caption settings - no more customization
-  private static readonly CAPTION_FONT = 'Helvetica';
-  private static readonly CAPTION_SIZE = 100; // Size for ASS format
+  // Caption font mappings
+  private static readonly CAPTION_FONT_MAP = {
+    'calibri': 'Calibri',
+    'arial': 'Arial',
+    'impact': 'Impact'
+  };
+
+  // Caption size mappings (for ASS format)
+  private static readonly CAPTION_SIZE_MAP = {
+    'small': 80,
+    'medium': 100,
+    'large': 120
+  };
+
+  // Caption position mappings (ASS alignment values)
+  private static readonly CAPTION_POSITION_MAP = {
+    'top': 8,     // Top center
+    'middle': 5,  // Middle center (default)
+    'bottom': 2   // Bottom center
+  };
+
+  // Caption margin mappings based on position
+  private static readonly CAPTION_MARGIN_MAP = {
+    'top': 340,    // Top margin positioned between top edge and center
+    'middle': 0,   // Middle (no special margin)
+    'bottom': 340  // Bottom margin positioned between bottom edge and center
+  };
+
+  // Default caption settings when no customization provided
+  private static readonly DEFAULT_CAPTION_FONT = 'Impact';
+  private static readonly DEFAULT_CAPTION_SIZE = 100;
+  private static readonly DEFAULT_CAPTION_POSITION = 5; // Middle center
+  private static readonly DEFAULT_CAPTION_MARGIN = 0;
   private static readonly CAPTION_BOLD = 4; // Always bold
   private static readonly CAPTION_OUTLINE = 4; // Medium outline
   private static readonly CAPTION_SHADOW = 1; // Light shadow
@@ -46,6 +83,29 @@ export class FFmpegVideoRenderer {
   // Cache settings
   private static readonly CACHE_DIR = path.join(process.cwd(), 'cache', 'background-videos');
   private static readonly CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
+  /**
+   * Get caption styling from customization options
+   */
+  private static getCaptionStyling(captionOptions?: CaptionCustomization) {
+    const font = captionOptions?.font ? 
+      this.CAPTION_FONT_MAP[captionOptions.font] : 
+      this.DEFAULT_CAPTION_FONT;
+    
+    const size = captionOptions?.textSize ? 
+      this.CAPTION_SIZE_MAP[captionOptions.textSize] : 
+      this.DEFAULT_CAPTION_SIZE;
+    
+    const alignment = captionOptions?.position ? 
+      this.CAPTION_POSITION_MAP[captionOptions.position] : 
+      this.DEFAULT_CAPTION_POSITION;
+    
+    const marginV = captionOptions?.position ? 
+      this.CAPTION_MARGIN_MAP[captionOptions.position] : 
+      this.DEFAULT_CAPTION_MARGIN;
+
+    return { font, size, alignment, marginV };
+  }
 
   /**
    * Initialize cache directory
@@ -145,39 +205,7 @@ export class FFmpegVideoRenderer {
     }
   }
 
-  /**
-   * Check if a video file has an audio stream using ffprobe
-   */
-  private static async hasAudioStream(videoPath: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      const ffprobe = spawn('ffprobe', [
-        '-v', 'quiet',
-        '-show_streams',
-        '-select_streams', 'a',
-        '-of', 'csv=p=0',
-        videoPath
-      ]);
 
-      let output = '';
-      
-      ffprobe.stdout.on('data', (data) => {
-        output += data.toString();
-      });
-
-      ffprobe.on('close', (code) => {
-        // If ffprobe succeeds and there's output, video has audio
-        const hasAudio = code === 0 && output.trim().length > 0;
-        console.log(`Video ${videoPath} has audio: ${hasAudio}`);
-        resolve(hasAudio);
-      });
-
-      ffprobe.on('error', () => {
-        // If ffprobe fails, assume no audio for safety
-        console.log(`ffprobe failed for ${videoPath}, assuming no audio`);
-        resolve(false);
-      });
-    });
-  }
 
   /**
    * Transcribe voice audio with word-level timestamps using Google Speech-to-Text
@@ -665,10 +693,12 @@ export class FFmpegVideoRenderer {
   }
 
   /**
-   * Create ASS subtitle file from captions with true centered positioning
+   * Create ASS subtitle file from captions with customizable styling
    */
-  private static async createAssSubtitleFile(captions: CaptionChunk[], outputPath: string): Promise<string> {
-    // ASS file header with proper resolution and styling
+  private static async createAssSubtitleFile(captions: CaptionChunk[], outputPath: string, captionOptions?: CaptionCustomization): Promise<string> {
+    const styling = this.getCaptionStyling(captionOptions);
+    
+    // ASS file header with proper resolution and custom styling
     const assHeader = `[Script Info]
 Title: Generated Subtitles
 ScriptType: v4.00+
@@ -677,7 +707,7 @@ PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${this.CAPTION_FONT},${this.CAPTION_SIZE},&Hffffff,&Hffffff,&H000000,&H000000,${this.CAPTION_BOLD},0,0,0,100,100,0,0,1,${this.CAPTION_OUTLINE},${this.CAPTION_SHADOW},5,60,60,0,1
+Style: Default,${styling.font},${styling.size},&Hffffff,&Hffffff,&H000000,&H000000,${this.CAPTION_BOLD},0,0,0,100,100,0,0,1,${this.CAPTION_OUTLINE},${this.CAPTION_SHADOW},${styling.alignment},60,60,${styling.marginV},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -695,6 +725,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     await fs.writeFile(outputPath, assContent, 'utf8');
     console.log(`Created ASS subtitle file with ${captions.length} captions at: ${outputPath}`);
+    console.log(`Caption styling: font=${styling.font}, size=${styling.size}, position=${styling.alignment}, margin=${styling.marginV}`);
     return outputPath;
   }
 
@@ -742,7 +773,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
    * Render video using FFmpeg with improved reliability
    */
   static async renderVideo(options: FFmpegVideoOptions): Promise<void> {
-    const { script, backgroundVideo, voiceAudio, audioDurationInSeconds, outputPath, wordTimestamps } = options;
+    const { script, backgroundVideo, voiceAudio, audioDurationInSeconds, outputPath, wordTimestamps, captionOptions } = options;
     
     console.log('Starting FFmpeg video render with optimized settings...');
     console.log('Options:', { 
@@ -807,44 +838,26 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       }
     }
 
-    // Create temporary ASS subtitle file
+    // Create temporary ASS subtitle file with custom styling
     const assPath = path.join(path.dirname(outputPath), `subtitles_${Date.now()}.ass`);
-    await this.createAssSubtitleFile(captions, assPath);
+    await this.createAssSubtitleFile(captions, assPath, captionOptions);
 
     console.log('Using ASS subtitles (centered)');
     console.log(`ASS path: ${assPath}`);
 
-    // Check if background video has audio
-    const bgVideoHasAudio = await this.hasAudioStream(localBackgroundVideo);
-    console.log(`Background video has audio: ${bgVideoHasAudio}`);
+    // Always ignore background video audio - only use voice audio
+    console.log('Background video audio will be ignored - using only voice audio');
 
-    // Build filter complex based on whether background video has audio
-    let filterComplex: string;
-    if (bgVideoHasAudio) {
-      // Background video has audio - mix it with voice
-      filterComplex = `
-        [0:v]scale=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,
-        pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
-        fps=${this.FPS}[scaled];
-        
-        [scaled]ass='${assPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'[v];
-        
-        [1:a]volume=1.0[voice_audio];
-        [0:a]volume=0.2[bg_audio];
-        [voice_audio][bg_audio]amix=inputs=2:duration=first:dropout_transition=3[audio_out]
-      `.replace(/\s+/g, ' ').trim();
-    } else {
-      // Background video has no audio - use only voice audio
-      filterComplex = `
-        [0:v]scale=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,
-        pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
-        fps=${this.FPS}[scaled];
-        
-        [scaled]ass='${assPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'[v];
-        
-        [1:a]volume=1.0[audio_out]
-      `.replace(/\s+/g, ' ').trim();
-    }
+    // Build filter complex - always use only voice audio
+    const filterComplex = `
+      [0:v]scale=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,
+      pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
+      fps=${this.FPS}[scaled];
+      
+      [scaled]ass='${assPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'[v];
+      
+      [1:a]volume=1.0[audio_out]
+    `.replace(/\s+/g, ' ').trim();
 
     // Use stream_loop for more reliable looping
     const ffmpegArgs = [

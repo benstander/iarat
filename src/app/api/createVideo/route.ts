@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FFmpegVideoRenderer } from '@/lib/ffmpeg-renderer';
+import { FFmpegVideoRenderer, type CaptionCustomization } from '@/lib/ffmpeg-renderer';
 import { generateVoice, saveVoiceToFile } from '@/lib/voice-generation';
 import { 
   getRandomMinecraftVideoUrl, 
@@ -30,7 +30,7 @@ function replaceFrWithForReal(text: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { script, summaries, backgroundVideo, voiceEnabled = true, voiceOptions } = body;
+    const { script, summaries, backgroundVideo, voiceEnabled = true, voiceOptions, captionOptions } = body;
 
     console.log('=== API Request Debug ===');
     console.log('Voice options received in API:', voiceOptions);
@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
             backgroundVideo: backgroundVideo || 'minecraft',
             voiceEnabled,
             voiceOptions,
+            captionOptions,
             topicTitle: summary.topicTitle,
             topicIndex: summary.topicIndex,
           });
@@ -112,6 +113,7 @@ export async function POST(req: NextRequest) {
         backgroundVideo: backgroundVideo || 'minecraft',
         voiceEnabled,
         voiceOptions,
+        captionOptions,
       });
       
       return NextResponse.json(result);
@@ -131,6 +133,7 @@ async function generateSingleVideo({
   backgroundVideo,
   voiceEnabled,
   voiceOptions,
+  captionOptions,
   topicTitle,
   topicIndex,
 }: {
@@ -138,6 +141,7 @@ async function generateSingleVideo({
   backgroundVideo: string;
   voiceEnabled: boolean;
   voiceOptions?: { style: string; character: string };
+  captionOptions?: CaptionCustomization;
   topicTitle?: string;
   topicIndex?: number;
 }) {
@@ -267,6 +271,7 @@ async function generateSingleVideo({
       audioDurationInSeconds: finalDuration,
       outputPath,
       wordTimestamps, // Pass ElevenLabs word timestamps for precise caption timing
+      captionOptions, // Pass caption customization options
     });
   } catch (renderError) {
     console.error('FFmpeg render failed:', renderError);

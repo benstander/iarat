@@ -14,6 +14,10 @@ import {
   VoiceOptions,
   VoiceStyle,
   VoiceCharacter,
+  CaptionOptions,
+  CaptionFont,
+  CaptionTextSize,
+  CaptionPosition,
   Topic,
   TopicSummary
 } from "@/components/states"
@@ -34,6 +38,11 @@ export default function Home() {
     style: 'academic',
     character: 'storyteller'
   })
+  const [captionOptions, setCaptionOptions] = useState<CaptionOptions>({
+    font: 'impact',
+    textSize: 'medium',
+    position: 'middle'
+  })
   const [topics, setTopics] = useState<Topic[]>([])
   const [topicSummaries, setTopicSummaries] = useState<TopicSummary[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -52,6 +61,19 @@ export default function Home() {
 
   const setVoiceCharacter = (character: VoiceCharacter) => {
     setVoiceOptions(prev => ({ ...prev, character }))
+  }
+
+  // Caption option setters
+  const setCaptionFont = (font: CaptionFont) => {
+    setCaptionOptions(prev => ({ ...prev, font }))
+  }
+
+  const setCaptionTextSize = (textSize: CaptionTextSize) => {
+    setCaptionOptions(prev => ({ ...prev, textSize }))
+  }
+
+  const setCaptionPosition = (position: CaptionPosition) => {
+    setCaptionOptions(prev => ({ ...prev, position }))
   }
 
   // Generate topics from landing page and go to customise
@@ -140,6 +162,7 @@ export default function Home() {
             voiceEnabled: true,
             videoFormat,
             voiceOptions,
+            captionOptions,
           }),
       })
 
@@ -175,6 +198,11 @@ export default function Home() {
       style: 'academic',
       character: 'storyteller'
     })
+    setCaptionOptions({
+      font: 'impact',
+      textSize: 'medium',
+      position: 'middle'
+    })
     setTopics([])
     setTopicSummaries([])
   }
@@ -203,6 +231,10 @@ export default function Home() {
             voiceOptions={voiceOptions}
             setVoiceStyle={setVoiceStyle}
             setVoiceCharacter={setVoiceCharacter}
+            captionOptions={captionOptions}
+            setCaptionFont={setCaptionFont}
+            setCaptionTextSize={setCaptionTextSize}
+            setCaptionPosition={setCaptionPosition}
             topics={topics}
             setTopics={setTopics}
             generateReel={generateReel}
