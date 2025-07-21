@@ -43,15 +43,19 @@ const MIN_VOICE_DURATION_SECONDS = 5;  // 5 seconds minimum
 
 // Voice character mapping to ElevenLabs voice IDs
 const VOICE_CHARACTER_MAP = {
-  'bella': 'EXAVITQu4vr4xnSDxMaL', // Bella
-  'andrew': 'pNInz6obpgDQGcFmaJgB', // Adam (default)
-  'lebron': 'ErXwobaYiN019PkySvjV'  // Antoni
+  'storyteller': 'hfgNmTYYctMgJ7E2s6Vx', // Shaun
+  'asmr': 'RBknfnzK8KHNwv44gIrh', // James Whitmore 
+  'trump': 'Tw2LVqLUUWkxqrCfFOpw', // Cole 
+  'lebron': '5F6a8n4ijdCrImoXgxM9',  // Mark 
+  'matthew mcconaughey': 'Mu5jxyqZOLIGltFpfalg', // Matthew 
+  'theo von': 'LNV6ahDtkAOqwn1X3R7a', // Elijah Boone
+  'ronaldo': 'IP2syKL31S2JthzSSfZH', // Ivan Rodriguez
 };
 
 // Function to get voice ID from character
 function getVoiceIdFromCharacter(character?: string): string {
-  if (!character) return VOICE_CHARACTER_MAP.andrew; // Default to andrew
-  return VOICE_CHARACTER_MAP[character as keyof typeof VOICE_CHARACTER_MAP] || VOICE_CHARACTER_MAP.andrew;
+  if (!character) return VOICE_CHARACTER_MAP.storyteller; // Default to storyteller
+  return VOICE_CHARACTER_MAP[character as keyof typeof VOICE_CHARACTER_MAP] || VOICE_CHARACTER_MAP.storyteller;
 }
 
 // Get actual audio duration from audio buffer using ffprobe
@@ -300,11 +304,11 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
     // Get voice ID from options
     const voiceId = options.voiceOptions?.character ? 
       getVoiceIdFromCharacter(options.voiceOptions.character) : 
-      getVoiceIdFromCharacter('andrew'); // Default to andrew
+      getVoiceIdFromCharacter('storyteller'); // Default to storyteller
     
     // Make API call to ElevenLabs with timing data
     console.log('Calling ElevenLabs with-timestamps endpoint...');
-    console.log(`Using voice ID: ${voiceId} for character: ${options.voiceOptions?.character || 'andrew'}`);
+    console.log(`Using voice ID: ${voiceId} for character: ${options.voiceOptions?.character || 'storyteller'}`);
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps`, {
       method: 'POST',
       headers: {

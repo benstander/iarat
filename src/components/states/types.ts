@@ -1,10 +1,19 @@
 export type VideoFormat = 'summary' | 'splitscreen' | 'quiz' | null
-export type BackgroundVideo = 'minecraft' | 'subway' | 'mega-ramp' | null
+export type BackgroundVideoCategory = 'gaming' | 'celebrities' | null
+export type GamingVideo = 'minecraft' | 'subway' | 'mega-ramp' | null
+export type CelebrityVideo = 'lebron' | 'ronaldo' | 'trump' | 'theo-von' | 'matthew-mc' | null
+export type BackgroundVideo = GamingVideo | CelebrityVideo | null
 export type VideoStyle = 'academic' | 'brainrot' | 'unhinged' | null
+
+// Background video selection state
+export interface BackgroundVideoSelection {
+  category: BackgroundVideoCategory
+  video: BackgroundVideo
+}
 
 // Voice types
 export type VoiceStyle = 'academic' | 'brainrot' | 'unhinged' | null
-export type VoiceCharacter = 'bella' | 'andrew' | 'lebron' | null
+export type VoiceCharacter = 'storyteller' | 'asmr' | 'match celeb' | null
 
 // Voice options
 export interface VoiceOptions {

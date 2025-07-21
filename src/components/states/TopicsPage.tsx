@@ -22,6 +22,7 @@ export default function TopicsPage({
   const minecraftVideoRef = useRef<HTMLVideoElement>(null)
   const subwayVideoRef = useRef<HTMLVideoElement>(null)
   const megaRampVideoRef = useRef<HTMLVideoElement>(null)
+  const celebrityVideoRef = useRef<HTMLVideoElement>(null)
 
   // Preload videos when component mounts
   useEffect(() => {
@@ -34,6 +35,9 @@ export default function TopicsPage({
       }
       if (megaRampVideoRef.current) {
         megaRampVideoRef.current.load()
+      }
+      if (celebrityVideoRef.current) {
+        celebrityVideoRef.current.load()
       }
     }
     preloadVideos()
@@ -121,6 +125,22 @@ export default function TopicsPage({
             playsInline
             preload="auto"
             src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/gta/gta1.mp4"
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Celebrity Video - cached and preloaded */}
+          <video
+            ref={celebrityVideoRef}
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideo === 'ronaldo' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/celebs/ronaldo.mp4"
           >
             Your browser does not support the video tag.
           </video>

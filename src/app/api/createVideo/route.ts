@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FFmpegVideoRenderer } from '@/lib/ffmpeg-renderer';
 import { generateVoice, saveVoiceToFile } from '@/lib/voice-generation';
-import { getRandomMinecraftVideoUrl, getRandomSubwayVideoUrl, getRandomMegaRampVideoUrl } from '@/lib/processing';
+import { 
+  getRandomMinecraftVideoUrl, 
+  getRandomSubwayVideoUrl, 
+  getRandomMegaRampVideoUrl,
+  getLebronVideoUrl,
+  getRonaldoVideoUrl,
+  getTrumpVideoUrl,
+  getTheoVonVideoUrl,
+  getMatthewMcVideoUrl
+} from '@/lib/processing';
 import { validateScriptDuration } from '@/lib/script-generation';
 import fs from 'fs/promises';
 import path from 'path';
@@ -214,6 +223,21 @@ async function generateSingleVideo({
   } else if (backgroundVideo === 'mega-ramp') {
     bgVideoUrl = getRandomMegaRampVideoUrl();
     console.log('Using random mega-ramp video:', bgVideoUrl);
+  } else if (backgroundVideo === 'lebron') {
+    bgVideoUrl = getLebronVideoUrl();
+    console.log('Using LeBron video:', bgVideoUrl);
+  } else if (backgroundVideo === 'ronaldo') {
+    bgVideoUrl = getRonaldoVideoUrl();
+    console.log('Using Ronaldo video:', bgVideoUrl);
+  } else if (backgroundVideo === 'trump') {
+    bgVideoUrl = getTrumpVideoUrl();
+    console.log('Using Trump video:', bgVideoUrl);
+  } else if (backgroundVideo === 'theo-von') {
+    bgVideoUrl = getTheoVonVideoUrl();
+    console.log('Using Theo Von video:', bgVideoUrl);
+  } else if (backgroundVideo === 'matthew-mc') {
+    bgVideoUrl = getMatthewMcVideoUrl();
+    console.log('Using Matthew McConaughey video:', bgVideoUrl);
   } else {
     // Fallback to minecraft if backgroundVideo is not recognized
     bgVideoUrl = getRandomMinecraftVideoUrl();

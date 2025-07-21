@@ -146,6 +146,40 @@ export class FFmpegVideoRenderer {
   }
 
   /**
+   * Check if a video file has an audio stream using ffprobe
+   */
+  private static async hasAudioStream(videoPath: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const ffprobe = spawn('ffprobe', [
+        '-v', 'quiet',
+        '-show_streams',
+        '-select_streams', 'a',
+        '-of', 'csv=p=0',
+        videoPath
+      ]);
+
+      let output = '';
+      
+      ffprobe.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      ffprobe.on('close', (code) => {
+        // If ffprobe succeeds and there's output, video has audio
+        const hasAudio = code === 0 && output.trim().length > 0;
+        console.log(`Video ${videoPath} has audio: ${hasAudio}`);
+        resolve(hasAudio);
+      });
+
+      ffprobe.on('error', () => {
+        // If ffprobe fails, assume no audio for safety
+        console.log(`ffprobe failed for ${videoPath}, assuming no audio`);
+        resolve(false);
+      });
+    });
+  }
+
+  /**
    * Transcribe voice audio with word-level timestamps using Google Speech-to-Text
    */
   private static async transcribeVoiceAudio(audioPath: string): Promise<WordTimestamp[]> {
@@ -230,7 +264,7 @@ export class FFmpegVideoRenderer {
         
         // Create chunk from word timestamps
         const chunkWordTimestamps = wordTimestamps.slice(currentWordIndex, currentWordIndex + chunkSize);
-        const chunkText = chunkWordTimestamps.map(wt => wt.word).join(' ').toUpperCase();
+        const chunkText = chunkWordTimestamps.map(wt => wt.word).join(' ').toLowerCase();
         
         // Use precise timing from transcription (no padding initially)
         const startTime = chunkWordTimestamps[0].startTime;
@@ -335,7 +369,7 @@ export class FFmpegVideoRenderer {
         
         // Create chunk from word timestamps
         const chunkWordTimestamps = wordTimestamps.slice(currentWordIndex, currentWordIndex + chunkSize);
-        const chunkText = chunkWordTimestamps.map(wt => wt.word).join(' ').toUpperCase();
+        const chunkText = chunkWordTimestamps.map(wt => wt.word).join(' ').toLowerCase();
         
         // Use precise timing from ElevenLabs (no padding initially)
         const startTime = chunkWordTimestamps[0].startTime;
@@ -456,7 +490,7 @@ export class FFmpegVideoRenderer {
       
       // Create the chunk
       const chunkWords = words.slice(currentWordIndex, currentWordIndex + chunkSize);
-      const chunkText = chunkWords.join(' ').toUpperCase();
+      const chunkText = chunkWords.join(' ').toLowerCase();
       
       // Calculate timing for this chunk with improvements
       const chunkDuration = chunkSize * baseSecondsPerWord;
@@ -780,6 +814,38 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     console.log('Using ASS subtitles (centered)');
     console.log(`ASS path: ${assPath}`);
 
+    // Check if background video has audio
+    const bgVideoHasAudio = await this.hasAudioStream(localBackgroundVideo);
+    console.log(`Background video has audio: ${bgVideoHasAudio}`);
+
+    // Build filter complex based on whether background video has audio
+    let filterComplex: string;
+    if (bgVideoHasAudio) {
+      // Background video has audio - mix it with voice
+      filterComplex = `
+        [0:v]scale=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,
+        pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
+        fps=${this.FPS}[scaled];
+        
+        [scaled]ass='${assPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'[v];
+        
+        [1:a]volume=1.0[voice_audio];
+        [0:a]volume=0.2[bg_audio];
+        [voice_audio][bg_audio]amix=inputs=2:duration=first:dropout_transition=3[audio_out]
+      `.replace(/\s+/g, ' ').trim();
+    } else {
+      // Background video has no audio - use only voice audio
+      filterComplex = `
+        [0:v]scale=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,
+        pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
+        fps=${this.FPS}[scaled];
+        
+        [scaled]ass='${assPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'[v];
+        
+        [1:a]volume=1.0[audio_out]
+      `.replace(/\s+/g, ' ').trim();
+    }
+
     // Use stream_loop for more reliable looping
     const ffmpegArgs = [
       '-y', // Overwrite output file
@@ -790,18 +856,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       // Thread optimization
       '-threads', this.THREAD_COUNT.toString(),
       
-      // Simplified and optimized filter chain
-      '-filter_complex', `
-        [0:v]scale=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,
-        pad=${this.VIDEO_WIDTH}:${this.VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,
-        fps=${this.FPS}[scaled];
-        
-        [scaled]ass='${assPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'[v];
-        
-        [1:a]volume=1.0[voice_audio];
-        [0:a]volume=0.2[bg_audio];
-        [voice_audio][bg_audio]amix=inputs=2:duration=first:dropout_transition=3[audio_out]
-      `.replace(/\s+/g, ' ').trim(),
+      // Dynamic filter chain based on audio availability
+      '-filter_complex', filterComplex,
       
       // Optimized output settings
       '-map', '[v]',

@@ -10,6 +10,10 @@ import {
 import { 
   VideoFormat, 
   BackgroundVideo, 
+  BackgroundVideoSelection,
+  BackgroundVideoCategory,
+  GamingVideo,
+  CelebrityVideo,
   VoiceOptions,
   VoiceStyle,
   VoiceCharacter,
@@ -20,8 +24,8 @@ import {
 interface CustomisePageProps {
   videoFormat: VideoFormat
   setVideoFormat: (format: VideoFormat) => void
-  backgroundVideo: BackgroundVideo
-  setBackgroundVideo: (bg: BackgroundVideo) => void
+  backgroundVideoSelection: BackgroundVideoSelection
+  setBackgroundVideoSelection: (selection: BackgroundVideoSelection) => void
   voiceOptions: VoiceOptions
   setVoiceStyle: (style: VoiceStyle) => void
   setVoiceCharacter: (character: VoiceCharacter) => void
@@ -34,8 +38,8 @@ interface CustomisePageProps {
 export default function CustomisePage({
   videoFormat,
   setVideoFormat,
-  backgroundVideo,
-  setBackgroundVideo,
+  backgroundVideoSelection,
+  setBackgroundVideoSelection,
   voiceOptions,
   setVoiceStyle,
   setVoiceCharacter,
@@ -141,24 +145,75 @@ export default function CustomisePage({
             {/* Background video */}
             <div className="space-y-4">
               <h3 className="text-md font-medium">Background video</h3>
-              <div className="flex gap-4 w-full">
-                {(['minecraft', 'subway', 'mega-ramp'] as const).map((bg) => (
+              
+              {/* First row - Gaming videos */}
+              <div className="flex gap-2 w-full">
+                {(['minecraft', 'subway', 'mega-ramp'] as const).map((game) => (
                   <Button
-                    key={bg}
-                    onClick={() => setBackgroundVideo(backgroundVideo === bg ? null : bg)}
+                    key={game}
+                    onClick={() => setBackgroundVideoSelection({
+                      category: 'gaming',
+                      video: backgroundVideoSelection.video === game ? null : game
+                    })}
                     variant="outline"
-                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white capitalize ${
-                      backgroundVideo === bg
+                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white font-medium ${
+                      backgroundVideoSelection.video === game
                         ? 'border-pink-500 bg-pink-50 border-[1.5px]'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {bg === 'minecraft' ? 'Minecraft Parkour' : 
-                     bg === 'subway' ? 'Subway Surfers' :
-                     bg === 'mega-ramp' ? 'Mega Ramp' :
-                     'Video'}
+                    {game === 'minecraft' ? 'Minecraft' : 
+                     game === 'subway' ? 'Subway' :
+                     'Mega Ramp'}
                   </Button>
                 ))}
+              </div>
+
+              {/* Second row - First 3 celebrities */}
+              <div className="flex gap-2 w-full">
+                {(['lebron', 'ronaldo', 'trump'] as const).map((celebrity) => (
+                  <Button
+                    key={celebrity}
+                    onClick={() => setBackgroundVideoSelection({
+                      category: 'celebrities',
+                      video: backgroundVideoSelection.video === celebrity ? null : celebrity
+                    })}
+                    variant="outline"
+                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white font-medium ${
+                      backgroundVideoSelection.video === celebrity
+                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {celebrity === 'lebron' ? 'LeBron' : 
+                     celebrity === 'ronaldo' ? 'Ronaldo' :
+                     'Trump'}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Third row - Last 2 celebrities */}
+              <div className="flex gap-2 w-full">
+                {(['theo-von', 'matthew-mc'] as const).map((celebrity) => (
+                  <Button
+                    key={celebrity}
+                    onClick={() => setBackgroundVideoSelection({
+                      category: 'celebrities',
+                      video: backgroundVideoSelection.video === celebrity ? null : celebrity
+                    })}
+                    variant="outline"
+                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white font-medium ${
+                      backgroundVideoSelection.video === celebrity
+                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {celebrity === 'theo-von' ? 'Theo Von' :
+                     'McConaughey'}
+                  </Button>
+                ))}
+                {/* Empty flex item to maintain spacing */}
+                <div className="flex-1"></div>
               </div>
             </div>
           </div>
@@ -192,18 +247,20 @@ export default function CustomisePage({
             <div className="space-y-4">
               <h3 className="text-md font-medium">Voice character</h3>
               <div className="flex gap-4 w-full">
-                {(['bella', 'andrew', 'lebron'] as const).map((character) => (
+                {(['storyteller', 'asmr', 'match celeb'] as const).map((character) => (
                   <Button
                     key={character}
                     onClick={() => setVoiceCharacter(voiceOptions.character === character ? null : character)}
                     variant="outline"
-                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border capitalize ${
+                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border ${
                       voiceOptions.character === character
                         ? 'border-pink-500 bg-pink-50 border-[1.5px]'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {character}
+                    {character === 'storyteller' ? 'Storyteller' : 
+                     character === 'asmr' ? 'ASMR' :
+                     'Match Celeb'}
                   </Button>
                 ))}
               </div>
@@ -290,7 +347,7 @@ export default function CustomisePage({
           <video
             ref={minecraftVideoRef}
             className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
-              backgroundVideo === 'minecraft' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              backgroundVideoSelection.video === 'minecraft' ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
             autoPlay
             loop
@@ -306,7 +363,7 @@ export default function CustomisePage({
           <video
             ref={subwayVideoRef}
             className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
-              backgroundVideo === 'subway' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              backgroundVideoSelection.video === 'subway' ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
             autoPlay
             loop
@@ -322,7 +379,7 @@ export default function CustomisePage({
           <video
             ref={megaRampVideoRef}
             className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
-              backgroundVideo === 'mega-ramp' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              backgroundVideoSelection.video === 'mega-ramp' ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
             autoPlay
             loop
@@ -330,6 +387,81 @@ export default function CustomisePage({
             playsInline
             preload="auto"
             src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/gta/gta1.mp4"
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {/* LeBron Video */}
+          <video
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideoSelection.video === 'lebron' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/celebs/lebron.mp4"
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Ronaldo Video */}
+          <video
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideoSelection.video === 'ronaldo' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/celebs/ronaldo.mp4"
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Trump Video */}
+          <video
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideoSelection.video === 'trump' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/celebs/trump.mp4"
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Theo Von Video */}
+          <video
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideoSelection.video === 'theo-von' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/celebs/theo-von.mp4"
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Matthew McConaughey Video */}
+          <video
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideoSelection.video === 'matthew-mc' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/celebs/matthew-mc.mp4"
           >
             Your browser does not support the video tag.
           </video>

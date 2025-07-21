@@ -26,6 +26,14 @@ const MEGA_RAMP_VIDEOS = [
   'gta5.mp4',
 ];
 
+const CELEBRITY_VIDEOS = [
+  'ronaldo.mp4',
+  'trump.mp4',
+  'theo-von.mp4',
+  'matthew-mc.mp4',
+  'lebron.mp4',
+];
+
 // Optimized audio download settings
 const AUDIO_QUALITY_OPTIONS: ytdl.downloadOptions = {
   filter: 'audioonly' as ytdl.Filter,
@@ -100,5 +108,46 @@ export function getRandomMegaRampVideoUrl() {
     .storage
     .from('background-videos')
     .getPublicUrl(`gta/${filename}`);
+  return data.publicUrl;
+}
+
+// Specific celebrity video functions
+export function getLebronVideoUrl() {
+  const { data } = supabase
+    .storage
+    .from('background-videos')
+    .getPublicUrl('celebs/lebron.mp4');
+  return data.publicUrl;
+}
+
+export function getRonaldoVideoUrl() {
+  const { data } = supabase
+    .storage
+    .from('background-videos')
+    .getPublicUrl('celebs/ronaldo.mp4');
+  return data.publicUrl;
+}
+
+export function getTrumpVideoUrl() {
+  const { data } = supabase
+    .storage
+    .from('background-videos')
+    .getPublicUrl('celebs/trump.mp4');
+  return data.publicUrl;
+}
+
+export function getTheoVonVideoUrl() {
+  const { data } = supabase
+    .storage
+    .from('background-videos')
+    .getPublicUrl('celebs/theo-von.mp4');
+  return data.publicUrl;
+}
+
+export function getMatthewMcVideoUrl() {
+  const { data } = supabase
+    .storage
+    .from('background-videos')
+    .getPublicUrl('celebs/matthew-mc.mp4');
   return data.publicUrl;
 }

@@ -10,6 +10,7 @@ import {
   FinishedPage,
   VideoFormat, 
   BackgroundVideo, 
+  BackgroundVideoSelection,
   VoiceOptions,
   VoiceStyle,
   VoiceCharacter,
@@ -25,10 +26,13 @@ export default function Home() {
   const [lectureLink, setLectureLink] = useState("")
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [videoFormat, setVideoFormat] = useState<VideoFormat>('summary')
-  const [backgroundVideo, setBackgroundVideo] = useState<BackgroundVideo>('subway')
+  const [backgroundVideoSelection, setBackgroundVideoSelection] = useState<BackgroundVideoSelection>({
+    category: 'gaming',
+    video: 'subway'
+  })
   const [voiceOptions, setVoiceOptions] = useState<VoiceOptions>({
     style: 'academic',
-    character: 'bella'
+    character: 'storyteller'
   })
   const [topics, setTopics] = useState<Topic[]>([])
   const [topicSummaries, setTopicSummaries] = useState<TopicSummary[]>([])
@@ -130,13 +134,13 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          summaries: selectedSummaries.length > 0 ? selectedSummaries : topicSummaries.slice(0, selectedTopics.length),
-          backgroundVideo: backgroundVideo === 'subway' ? 'subway' : backgroundVideo === 'minecraft' ? 'minecraft' : 'mega-ramp',
-          voiceEnabled: true,
-          videoFormat,
-          voiceOptions,
-        }),
+                  body: JSON.stringify({
+            summaries: selectedSummaries.length > 0 ? selectedSummaries : topicSummaries.slice(0, selectedTopics.length),
+            backgroundVideo: backgroundVideoSelection.video || 'mega-ramp',
+            voiceEnabled: true,
+            videoFormat,
+            voiceOptions,
+          }),
       })
 
       if (!videoResponse.ok) {
@@ -163,10 +167,13 @@ export default function Home() {
     setUploadedFile(null)
     setGeneratedVideoUrl("")
     setVideoFormat('summary')
-    setBackgroundVideo('subway')
+    setBackgroundVideoSelection({
+      category: 'gaming',
+      video: 'subway'
+    })
     setVoiceOptions({
       style: 'academic',
-      character: 'bella'
+      character: 'storyteller'
     })
     setTopics([])
     setTopicSummaries([])
@@ -191,8 +198,8 @@ export default function Home() {
           <CustomisePage
             videoFormat={videoFormat}
             setVideoFormat={setVideoFormat}
-            backgroundVideo={backgroundVideo}
-            setBackgroundVideo={setBackgroundVideo}
+            backgroundVideoSelection={backgroundVideoSelection}
+            setBackgroundVideoSelection={setBackgroundVideoSelection}
             voiceOptions={voiceOptions}
             setVoiceStyle={setVoiceStyle}
             setVoiceCharacter={setVoiceCharacter}
