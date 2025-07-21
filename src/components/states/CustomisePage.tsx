@@ -17,6 +17,10 @@ import {
   VoiceOptions,
   VoiceStyle,
   VoiceCharacter,
+  CaptionOptions,
+  CaptionFont,
+  CaptionTextSize,
+  CaptionPosition,
   Topic,
   CustomiseTab
 } from "./types"
@@ -29,6 +33,10 @@ interface CustomisePageProps {
   voiceOptions: VoiceOptions
   setVoiceStyle: (style: VoiceStyle) => void
   setVoiceCharacter: (character: VoiceCharacter) => void
+  captionOptions: CaptionOptions
+  setCaptionFont: (font: CaptionFont) => void
+  setCaptionTextSize: (textSize: CaptionTextSize) => void
+  setCaptionPosition: (position: CaptionPosition) => void
   topics: Topic[]
   setTopics: (topics: Topic[]) => void
   generateReel: () => void
@@ -43,6 +51,10 @@ export default function CustomisePage({
   voiceOptions,
   setVoiceStyle,
   setVoiceCharacter,
+  captionOptions,
+  setCaptionFont,
+  setCaptionTextSize,
+  setCaptionPosition,
   topics,
   setTopics,
   generateReel,
@@ -86,7 +98,8 @@ export default function CustomisePage({
   const getContinueButtonText = () => {
     switch (currentTab) {
       case 'video': return 'Continue to voice'
-      case 'voice': return 'Continue to topics'
+      case 'voice': return 'Continue to captions'
+      case 'captions': return 'Continue to topics'
       case 'topics': return isProcessing ? 'Generating video...' : 'Generate video'
       default: return 'Continue'
     }
@@ -99,6 +112,9 @@ export default function CustomisePage({
         setCurrentTab('voice')
         break
       case 'voice':
+        setCurrentTab('captions')
+        break
+      case 'captions':
         setCurrentTab('topics')
         break
       case 'topics':
@@ -109,6 +125,45 @@ export default function CustomisePage({
         }
         generateReel()
         break
+    }
+  }
+
+  // Get dynamic caption preview styles based on user selections
+  const getCaptionPreviewStyles = () => {
+    const fontMapping = {
+      calibri: 'Calibri, sans-serif',
+      arial: 'Arial, sans-serif',
+      impact: 'Impact, sans-serif'
+    }
+
+    const sizeMapping = {
+      small: '16px',
+      medium: '18px',
+      large: '22px'
+    }
+
+    const positionMapping = {
+      top: { top: '15%', transform: 'translate(-50%, 0)' },
+      middle: { top: '50%', transform: 'translate(-50%, -50%)' },
+      bottom: { bottom: '15%', transform: 'translateX(-50%)' }
+    }
+
+    return {
+      fontFamily: fontMapping[captionOptions.font || 'impact'],
+      fontSize: sizeMapping[captionOptions.textSize || 'medium'],
+      ...positionMapping[captionOptions.position || 'middle'],
+      left: '50%',
+      position: 'absolute' as const,
+      color: 'white',
+      fontWeight: 'bold',
+      textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8), 1px -1px 2px rgba(0, 0, 0, 0.8), -1px 1px 2px rgba(0, 0, 0, 0.8)',
+      lineHeight: '1.2',
+      wordWrap: 'break-word' as const,
+      textAlign: 'center' as const,
+      maxWidth: '90%',
+      padding: '0 16px',
+      pointerEvents: 'none' as const,
+      zIndex: 10
     }
   }
 
@@ -268,6 +323,74 @@ export default function CustomisePage({
           </div>
         )
 
+      case 'captions':
+        return (
+          <div className="space-y-8">
+            {/* Caption font */}
+            <div className="space-y-4">
+              <h3 className="text-md font-medium">Font</h3>
+              <div className="flex gap-4 w-full">
+                {(['calibri', 'arial', 'impact'] as const).map((font) => (
+                  <Button
+                    key={font}
+                    onClick={() => setCaptionFont(captionOptions.font === font ? null : font)}
+                    variant="outline"
+                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border capitalize ${
+                      captionOptions.font === font
+                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {font}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Text size */}
+            <div className="space-y-4">
+              <h3 className="text-md font-medium">Text size</h3>
+              <div className="flex gap-4 w-full">
+                {(['small', 'medium', 'large'] as const).map((size) => (
+                  <Button
+                    key={size}
+                    onClick={() => setCaptionTextSize(captionOptions.textSize === size ? null : size)}
+                    variant="outline"
+                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border capitalize ${
+                      captionOptions.textSize === size
+                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {size}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Caption position */}
+            <div className="space-y-4">
+              <h3 className="text-md font-medium">Caption position</h3>
+              <div className="flex gap-4 w-full">
+                {(['top', 'middle', 'bottom'] as const).map((position) => (
+                  <Button
+                    key={position}
+                    onClick={() => setCaptionPosition(captionOptions.position === position ? null : position)}
+                    variant="outline"
+                    className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border capitalize ${
+                      captionOptions.position === position
+                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {position}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+
       case 'topics':
         return (
           <div className="space-y-4 pr-2">
@@ -306,7 +429,7 @@ export default function CustomisePage({
         {/* Tab Navigation */}
         <div className="flex flex-col h-full">
           <div className="flex border-b border-gray-200 mb-6">
-            {(['video', 'voice', 'topics'] as const).map((tab) => (
+            {(['video', 'voice', 'captions', 'topics'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setCurrentTab(tab)}
@@ -466,23 +589,9 @@ export default function CustomisePage({
             Your browser does not support the video tag.
           </video>
           
-          {/* Caption Preview Overlay */}
-          <div 
-            className="absolute left-1/2 text-center max-w-[90%] px-4 pointer-events-none z-10"
-            style={{
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              fontFamily: 'Impact',
-              fontSize: '18px',
-              fontWeight: 'bold',
-              color: 'white',
-              textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(0, 0, 0, 0.8), 1px -1px 2px rgba(0, 0, 0, 0.8), -1px 1px 2px rgba(0, 0, 0, 0.8)',
-              lineHeight: '1.2',
-              wordWrap: 'break-word'
-            }}
-          >
-            CAPTIONS ALWAYS APPEAR HERE
+          {/* Caption Preview Overlay - Dynamic based on user selections */}
+          <div style={getCaptionPreviewStyles()}>
+            CAPTIONS PREVIEW HERE
           </div>
 
           {/* Loading Overlay - Only shows during video generation */}

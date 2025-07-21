@@ -21,6 +21,18 @@ export interface VoiceOptions {
   character: VoiceCharacter
 }
 
+// Caption types
+export type CaptionFont = 'calibri' | 'arial' | 'impact' | null
+export type CaptionTextSize = 'small' | 'medium' | 'large' | null
+export type CaptionPosition = 'top' | 'middle' | 'bottom' | null
+
+// Caption options
+export interface CaptionOptions {
+  font: CaptionFont
+  textSize: CaptionTextSize
+  position: CaptionPosition
+}
+
 // Topic type
 export interface Topic {
   id: string
@@ -37,7 +49,7 @@ export interface TopicSummary {
 }
 
 // Customise tab type
-export type CustomiseTab = 'video' | 'voice' | 'topics'
+export type CustomiseTab = 'video' | 'voice' | 'captions' | 'topics'
 
 export interface AppState {
   currentPage: 'landing' | 'topics' | 'customise' | 'finished'
@@ -46,6 +58,7 @@ export interface AppState {
   backgroundVideo: BackgroundVideo
   videoStyle: VideoStyle
   voiceOptions: VoiceOptions
+  captionOptions: CaptionOptions
   topics: Topic[]
   isProcessing: boolean
 } 
