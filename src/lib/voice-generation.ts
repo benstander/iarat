@@ -1,7 +1,7 @@
 export interface VoiceGenerationOptions {
   text: string;
   voiceId?: string;
-  voiceOptions?: { style: string; character: string };
+  voiceOptions?: { style: string; character: string; backgroundVideo?: string };
   stability?: number;
   similarityBoost?: number;
   maxDurationSeconds?: number;
@@ -50,7 +50,24 @@ const VOICE_CHARACTER_MAP = {
   'matthew mcconaughey': 'Mu5jxyqZOLIGltFpfalg', // Matthew 
   'theo von': 'LNV6ahDtkAOqwn1X3R7a', // Elijah Boone
   'ronaldo': 'IP2syKL31S2JthzSSfZH', // Ivan Rodriguez
+  'elon musk': 'XLghPxSVv9YaNtcIwfbt', // Kyle
 };
+
+// Map background video celebrity selections to voice character names
+const BACKGROUND_VIDEO_TO_VOICE_CHARACTER_MAP = {
+  'lebron': 'lebron',
+  'ronaldo': 'ronaldo', 
+  'trump': 'trump',
+  'theo-von': 'theo von',
+  'matthew-mc': 'matthew mcconaughey',
+  'elon-musk': 'elon musk',
+};
+
+// Function to get voice character from background video selection
+export function getVoiceCharacterFromBackgroundVideo(backgroundVideo?: string): string | null {
+  if (!backgroundVideo) return null;
+  return BACKGROUND_VIDEO_TO_VOICE_CHARACTER_MAP[backgroundVideo as keyof typeof BACKGROUND_VIDEO_TO_VOICE_CHARACTER_MAP] || null;
+}
 
 // Function to get voice ID from character
 function getVoiceIdFromCharacter(character?: string): string {
@@ -222,7 +239,6 @@ function convertCharacterTimestampsToWords(
   
   let currentWord = '';
   let wordStartIndex = -1;
-  let charIndex = 0;
   
   for (let i = 0; i < textChars.length; i++) {
     const char = textChars[i];
@@ -301,14 +317,32 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
     const finalWordCount = text.trim().split(/\s+/).length;
     const estimatedDuration = finalWordCount / ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND;
     
-    // Get voice ID from options
-    const voiceId = options.voiceOptions?.character ? 
-      getVoiceIdFromCharacter(options.voiceOptions.character) : 
-      getVoiceIdFromCharacter('storyteller'); // Default to storyteller
+    // Handle "match celeb" character selection
+    let effectiveCharacter = options.voiceOptions?.character;
+    if (effectiveCharacter === 'match celeb') {
+      // Look for backgroundVideo in the options or try to extract from voiceOptions
+      const backgroundVideoFromOptions = (options.voiceOptions as { style: string; character: string; backgroundVideo?: string })?.backgroundVideo;
+      if (backgroundVideoFromOptions) {
+        const matchedCharacter = getVoiceCharacterFromBackgroundVideo(backgroundVideoFromOptions);
+        if (matchedCharacter) {
+          effectiveCharacter = matchedCharacter;
+          console.log(`Match celeb selected: Using voice character "${effectiveCharacter}" for background video "${backgroundVideoFromOptions}"`);
+        } else {
+          console.log(`Match celeb selected but no matching voice found for background video "${backgroundVideoFromOptions}", falling back to storyteller`);
+          effectiveCharacter = 'storyteller';
+        }
+      } else {
+        console.log('Match celeb selected but no background video provided, falling back to storyteller');
+        effectiveCharacter = 'storyteller';
+      }
+    }
+    
+    // Get voice ID from effective character
+    const voiceId = getVoiceIdFromCharacter(effectiveCharacter);
     
     // Make API call to ElevenLabs with timing data
     console.log('Calling ElevenLabs with-timestamps endpoint...');
-    console.log(`Using voice ID: ${voiceId} for character: ${options.voiceOptions?.character || 'storyteller'}`);
+    console.log(`Using voice ID: ${voiceId} for character: ${effectiveCharacter || 'storyteller'}`);
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps`, {
       method: 'POST',
       headers: {

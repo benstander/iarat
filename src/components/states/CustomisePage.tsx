@@ -247,9 +247,9 @@ export default function CustomisePage({
                 ))}
               </div>
 
-              {/* Third row - Last 2 celebrities */}
+              {/* Third row - Last 3 celebrities */}
               <div className="flex gap-2 w-full">
-                {(['theo-von', 'matthew-mc'] as const).map((celebrity) => (
+                {(['theo-von', 'matthew-mc', 'elon-musk'] as const).map((celebrity) => (
                   <Button
                     key={celebrity}
                     onClick={() => setBackgroundVideoSelection({
@@ -264,11 +264,10 @@ export default function CustomisePage({
                     }`}
                   >
                     {celebrity === 'theo-von' ? 'Theo Von' :
-                     'McConaughey'}
+                     celebrity === 'matthew-mc' ? 'McConaughey' :
+                     'Elon Musk'}
                   </Button>
                 ))}
-                {/* Empty flex item to maintain spacing */}
-                <div className="flex-1"></div>
               </div>
             </div>
           </div>
@@ -585,6 +584,21 @@ export default function CustomisePage({
             playsInline
             preload="auto"
             src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/celebs/matthew-mc.mp4"
+          >
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Elon Musk Video */}
+          <video
+            className={`w-full h-full object-cover absolute top-0 left-0 transition-opacity duration-300 ${
+              backgroundVideoSelection.video === 'elon-musk' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            src="https://odlodohhblopeekvquaa.supabase.co/storage/v1/object/public/background-videos/celebs/elon.mp4"
           >
             Your browser does not support the video tag.
           </video>

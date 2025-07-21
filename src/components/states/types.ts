@@ -1,7 +1,7 @@
 export type VideoFormat = 'summary' | 'splitscreen' | 'quiz' | null
 export type BackgroundVideoCategory = 'gaming' | 'celebrities' | null
 export type GamingVideo = 'minecraft' | 'subway' | 'mega-ramp' | null
-export type CelebrityVideo = 'lebron' | 'ronaldo' | 'trump' | 'theo-von' | 'matthew-mc' | null
+export type CelebrityVideo = 'lebron' | 'ronaldo' | 'trump' | 'theo-von' | 'matthew-mc' | 'elon-musk' | null
 export type BackgroundVideo = GamingVideo | CelebrityVideo | null
 export type VideoStyle = 'academic' | 'brainrot' | 'unhinged' | null
 

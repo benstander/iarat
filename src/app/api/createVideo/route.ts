@@ -9,7 +9,8 @@ import {
   getRonaldoVideoUrl,
   getTrumpVideoUrl,
   getTheoVonVideoUrl,
-  getMatthewMcVideoUrl
+  getMatthewMcVideoUrl,
+  getElonMuskVideoUrl
 } from '@/lib/processing';
 import { validateScriptDuration } from '@/lib/script-generation';
 import fs from 'fs/promises';
@@ -173,7 +174,10 @@ async function generateSingleVideo({
       
       const voiceResult = await generateVoice({ 
         text: ttsScript, 
-        voiceOptions: voiceOptions 
+        voiceOptions: {
+          ...voiceOptions,
+          backgroundVideo: backgroundVideo // Pass background video for "match celeb" functionality
+        }
       });
       const audioFilename = `voice_${Date.now()}_${topicIndex || 'single'}.mp3`;
       const { publicUrl: voiceAudioUrlPublic, filePath: voiceAudioFilePathResult } = await saveVoiceToFile(voiceResult.audioBuffer, audioFilename);
@@ -242,6 +246,9 @@ async function generateSingleVideo({
   } else if (backgroundVideo === 'matthew-mc') {
     bgVideoUrl = getMatthewMcVideoUrl();
     console.log('Using Matthew McConaughey video:', bgVideoUrl);
+  } else if (backgroundVideo === 'elon-musk') {
+    bgVideoUrl = getElonMuskVideoUrl();
+    console.log('Using Elon Musk video:', bgVideoUrl);
   } else {
     // Fallback to minecraft if backgroundVideo is not recognized
     bgVideoUrl = getRandomMinecraftVideoUrl();

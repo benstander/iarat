@@ -44,5 +44,8 @@ next-env.d.ts
 /temp
 
 public/generated-videos/*
+/cache/*
+/manim_output/*
 
 .python-version
+

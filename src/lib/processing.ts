@@ -151,3 +151,11 @@ export function getMatthewMcVideoUrl() {
     .getPublicUrl('celebs/matthew-mc.mp4');
   return data.publicUrl;
 }
+
+export function getElonMuskVideoUrl() {
+  const { data } = supabase
+    .storage
+    .from('background-videos')
+    .getPublicUrl('celebs/elon.mp4');
+  return data.publicUrl;
+}
