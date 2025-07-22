@@ -6,6 +6,7 @@ interface ScriptGenerationOptions {
   textContent: string;
   brainrotStyle?: string;
   videoStyle?: 'brainrot' | 'academic' | 'unhinged';
+  videoDialogue?: 'explainer' | 'debater' | 'socratic' | 'narrative' | 'examples' | 'quiz' | null;
   maxDurationSeconds?: number;
 }
 
@@ -19,6 +20,63 @@ const ELEVENLABS_SPEAKING_RATE = {
 function calculateMaxWords(durationSeconds: number): number {
   const baseWords = Math.floor(durationSeconds * ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND * ELEVENLABS_SPEAKING_RATE.SAFETY_BUFFER);
   return Math.max(20, baseWords); // Minimum 20 words
+}
+
+function getDialoguePrompt(videoDialogue: 'explainer' | 'debater' | 'socratic' | 'narrative' | 'examples' | 'quiz' | null): {
+  approach: string;
+  structure: string;
+  techniques: string;
+} {
+  switch (videoDialogue) {
+    case 'explainer':
+      return {
+        approach: "Use a clear explanatory approach that breaks down complex concepts into simple, understandable parts.",
+        structure: "Jump quickly into main concept → Provide key details → Give concrete examples → Show practical applications",
+        techniques: "Use phrases like 'Let me explain...', 'Here's how this works...', 'To understand this...', 'The key point is...', 'Simply put...'"
+      };
+    
+    case 'debater':
+      return {
+        approach: "Present information from multiple perspectives and engage with potential counterarguments.",
+        structure: "Present main view → Address opposing views → Provide evidence → Counter rebuttals with facts",
+        techniques: "Use phrases like 'Some might argue...', 'However, the evidence shows...', 'Critics claim... but...', 'On the other hand...', 'The real question is...'"
+      };
+    
+    case 'socratic':
+      return {
+        approach: "Use questioning techniques to guide viewers through discovery of concepts.",
+        structure: "Pose questions → Guide thinking → Reveal insights → Ask follow-up questions → Show practical implications",
+        techniques: "Use rhetorical questions like 'But what if...?', 'Have you ever wondered...?', 'Why do you think...?', 'What would happen if...?', 'How does this change when...?'"
+      };
+    
+    case 'narrative':
+      return {
+        approach: "Tell the information as a compelling story with characters, conflict, and resolution.",
+        structure: "Set the scene quickly → Introduce conflict/problem → Build tension → Show resolution with educational insights",
+        techniques: "Use storytelling elements like 'Imagine...', 'Picture this...', 'But then something changed...', 'This shows us...'"
+      };
+    
+    case 'examples':
+      return {
+        approach: "Focus heavily on concrete, relatable examples to illustrate every major point.",
+        structure: "Present concept → Real example → Another example → Show how examples connect → Practical applications",
+        techniques: "Use phrases like 'For example...', 'Think about...', 'Just like when...', 'This is similar to...', 'In everyday life...'"
+      };
+    
+    case 'quiz':
+      return {
+        approach: "Present information in an interactive quiz-like format with questions, answers, and explanations.",
+        structure: "Structure as: Pose question → Give viewers time to think → Reveal answer → Explain why → Next question",
+        techniques: "Use phrases like 'Quick question...', 'Can you guess...?', 'The answer is...', 'If you said... you're right!', 'Here's why...'"
+      };
+    
+    default:
+      return {
+        approach: "Use a straightforward, engaging educational approach.",
+        structure: "Structure logically with clear progression of ideas.",
+        techniques: "Use engaging, conversational language appropriate to the content."
+      };
+  }
 }
 
 function getStylePrompt(videoStyle: 'brainrot' | 'academic' | 'unhinged' = 'brainrot'): {
@@ -72,14 +130,15 @@ export async function generateVideoScript({
   textContent, 
   brainrotStyle = 'engaging and modern',
   videoStyle = 'brainrot',
+  videoDialogue = null,
   maxDurationSeconds = 60
 }: ScriptGenerationOptions): Promise<string> {
   if (!textContent) {
     throw new Error('Text content is required');
   }
 
-  // Always target 60 seconds maximum
-  const targetDuration = Math.min(maxDurationSeconds, 60);
+  // Use the requested duration without artificial caps
+  const targetDuration = maxDurationSeconds;
   const recommendedWords = calculateMaxWords(targetDuration);
   
   console.log(`Script generation parameters:`);
@@ -89,9 +148,10 @@ export async function generateVideoScript({
 
   // Get style-specific prompt components
   const stylePrompt = getStylePrompt(videoStyle);
+  const dialoguePrompt = getDialoguePrompt(videoDialogue);
 
   // Create a prompt that provides duration guidance without strict enforcement
-  const prompt = `${stylePrompt.roleDescription} Transform this educational content into a VOICEOVER SCRIPT that TEACHES effectively using the specified style.
+  const prompt = `${stylePrompt.roleDescription} Transform this educational content into a VOICEOVER SCRIPT that TEACHES effectively using the specified style and dialogue approach.
 
 Content to work with: ${textContent}
 
@@ -113,25 +173,37 @@ CONTENT REQUIREMENTS:
 STYLE-SPECIFIC REQUIREMENTS:
 ${stylePrompt.styleSpecific}
 
+DIALOGUE APPROACH REQUIREMENTS:
+- ${dialoguePrompt.approach}
+- ${dialoguePrompt.structure}  
+- ${dialoguePrompt.techniques}
+
 STRUCTURE REQUIREMENTS:
-- Use sufficient time to thoroughly explain the concepts
-- Break down ideas into digestible steps
-- Include concrete examples and analogies
-- Cover the key points with good explanations
-- Balance education with engagement
+- MINIMIZE intro fluff - jump quickly into educational content (max 1-2 sentences for intro)
+- NO unnecessary ending summaries or outro phrases like "that's what they don't want you to know", "mind blown yet?", etc.
+- Use sufficient time to thoroughly explain the concepts with concrete examples
+- Break down ideas into digestible steps with specific details
+- Balance education with engagement but prioritize substance over entertainment
 - NEVER use em dashes. Use commas instead.
 
 CRITICAL REQUIREMENTS:
 - ${stylePrompt.languageBalance}
-- Ensure viewers actually LEARN something concrete
+- Ensure viewers actually LEARN something concrete and actionable
 - Focus on clarity and understanding over pure entertainment
-- Structure with clear beginning, middle, and end
-- Include specific examples or interesting facts
+- MAXIMIZE educational content - don't waste words on unnecessary introductions or conclusions
+- Include specific examples, facts, or practical applications
 - NEVER include production notes like "cut to visuals", "show graphics", or similar instructions
 - Write ONLY what the narrator will say out loud
 - Complete your thoughts naturally - don't cut off mid-sentence for word count
 
 Legacy Style Parameter: ${brainrotStyle}
+
+AVOID THESE TIME-WASTING PHRASES:
+- Long introductions like "What's up everybody, welcome back to my channel" 
+- Unnecessary ending summaries like "Mind blown yet?", "That's what they don't want you to know", "Let's keep this convo going"
+- Filler phrases that don't add educational value
+- Generic conclusions or call-to-actions
+- Repetitive transitional phrases
 
 TIMING REMINDER: Aim for around ${recommendedWords} words, but prioritize educational value and natural flow over strict adherence to word count.`;
 
@@ -187,5 +259,5 @@ export function validateScriptDuration(script: string, maxDurationSeconds: numbe
  * Get optimal word count for duration
  */
 export function getOptimalWordCount(durationSeconds: number): number {
-  return calculateMaxWords(Math.min(durationSeconds, 60));
+  return calculateMaxWords(durationSeconds);
 } 

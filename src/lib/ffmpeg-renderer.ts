@@ -373,7 +373,7 @@ export class FFmpegVideoRenderer {
   }
 
   /**
-   * Generate captions from ElevenLabs word timestamps with precise timing
+   * Generate captions from ElevenLabs word timestamps with precise timing - ONE WORD PER CAPTION
    */
   public static generateCaptionsFromElevenLabsTimestamps(wordTimestamps: WordTimestamp[]): CaptionChunk[] {
     try {
@@ -384,90 +384,28 @@ export class FFmpegVideoRenderer {
       
       console.log(`Generating captions from ${wordTimestamps.length} ElevenLabs word timestamps`);
       
-      // Group words intelligently into caption chunks
+      // Create one caption chunk per word using exact ElevenLabs timing
       const chunks: CaptionChunk[] = [];
-      let currentWordIndex = 0;
       
-      while (currentWordIndex < wordTimestamps.length) {
-        const remainingWords = wordTimestamps.length - currentWordIndex;
-        
-        // Get the words for analysis
-        const words = wordTimestamps.slice(currentWordIndex).map(wt => wt.word);
-        const chunkSize = this.determineIntelligentChunkSize(words, 0, remainingWords);
-        
-        // Create chunk from word timestamps
-        const chunkWordTimestamps = wordTimestamps.slice(currentWordIndex, currentWordIndex + chunkSize);
-        const chunkText = chunkWordTimestamps.map(wt => wt.word).join(' ').toLowerCase();
-        
-        // Use precise timing from ElevenLabs (no padding initially)
-        const startTime = chunkWordTimestamps[0].startTime;
-        const endTime = chunkWordTimestamps[chunkWordTimestamps.length - 1].endTime;
+      for (let i = 0; i < wordTimestamps.length; i++) {
+        const wordTimestamp = wordTimestamps[i];
         
         chunks.push({
-          text: chunkText,
-          startTime: startTime,
-          endTime: endTime,
+          text: wordTimestamp.word.toLowerCase(),
+          startTime: wordTimestamp.startTime,
+          endTime: wordTimestamp.endTime,
         });
-        
-        currentWordIndex += chunkSize;
-      }
-      
-      // Post-process to ensure no overlaps and reasonable duration
-      const MIN_CAPTION_DURATION = 0.5; // Minimum readable duration
-      const MAX_CAPTION_DURATION = 4.0; // Maximum for very long phrases
-      const CAPTION_GAP = 0.1; // Gap between captions to ensure clean transitions
-      
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        
-        // First, determine the maximum possible end time
-        let maxEndTime = chunk.endTime;
-        
-        // If there's a next caption, ensure we don't overlap with it
-        if (i < chunks.length - 1) {
-          const nextChunk = chunks[i + 1];
-          maxEndTime = Math.min(maxEndTime, nextChunk.startTime - CAPTION_GAP);
-        }
-        
-        // Apply minimum duration if possible
-        const currentDuration = maxEndTime - chunk.startTime;
-        if (currentDuration < MIN_CAPTION_DURATION) {
-          // Try to extend the caption, but don't overlap with next
-          const desiredEndTime = chunk.startTime + MIN_CAPTION_DURATION;
-          if (i < chunks.length - 1) {
-            const nextChunk = chunks[i + 1];
-            maxEndTime = Math.min(desiredEndTime, nextChunk.startTime - CAPTION_GAP);
-          } else {
-            maxEndTime = desiredEndTime;
-          }
-        }
-        
-        // Apply maximum duration limit
-        if (maxEndTime - chunk.startTime > MAX_CAPTION_DURATION) {
-          maxEndTime = chunk.startTime + MAX_CAPTION_DURATION;
-        }
-        
-        // Set the final end time
-        chunk.endTime = maxEndTime;
-      }
-      
-      // Final pass: ensure absolutely no overlaps
-      for (let i = 0; i < chunks.length - 1; i++) {
-        const currentChunk = chunks[i];
-        const nextChunk = chunks[i + 1];
-        
-        // If there's still an overlap, prioritize the next caption
-        if (currentChunk.endTime > nextChunk.startTime - CAPTION_GAP) {
-          currentChunk.endTime = nextChunk.startTime - CAPTION_GAP;
-        }
       }
       
       // Debug logging
-      console.log(`Generated ${chunks.length} caption chunks from ElevenLabs word timestamps (no overlaps):`);
-      chunks.forEach((chunk, index) => {
+      console.log(`Generated ${chunks.length} caption chunks from ElevenLabs word timestamps (one word per caption):`);
+      chunks.slice(0, 10).forEach((chunk, index) => {
         const duration = chunk.endTime - chunk.startTime;
         console.log(`  ${index + 1}. [${chunk.startTime.toFixed(2)}s - ${chunk.endTime.toFixed(2)}s] (${duration.toFixed(2)}s) "${chunk.text}"`);
       });
+      if (chunks.length > 10) {
+        console.log(`  ... and ${chunks.length - 10} more words`);
+      }
       
       return chunks;
       

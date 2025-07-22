@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 
-// Import types and components
+  // Import types and components
 import { 
   LandingPage,
   CustomisePage,
@@ -14,6 +14,7 @@ import {
   VoiceOptions,
   VoiceStyle,
   VoiceCharacter,
+  VideoDialogue,
   CaptionOptions,
   CaptionFont,
   CaptionTextSize,
@@ -36,7 +37,8 @@ export default function Home() {
   })
   const [voiceOptions, setVoiceOptions] = useState<VoiceOptions>({
     style: 'academic',
-    character: 'storyteller'
+    character: 'storyteller',
+    dialogue: null
   })
   const [captionOptions, setCaptionOptions] = useState<CaptionOptions>({
     font: 'impact',
@@ -61,6 +63,10 @@ export default function Home() {
 
   const setVoiceCharacter = (character: VoiceCharacter) => {
     setVoiceOptions(prev => ({ ...prev, character }))
+  }
+
+  const setVideoDialogue = (dialogue: VideoDialogue) => {
+    setVoiceOptions(prev => ({ ...prev, dialogue }))
   }
 
   // Caption option setters
@@ -196,7 +202,8 @@ export default function Home() {
     })
     setVoiceOptions({
       style: 'academic',
-      character: 'storyteller'
+      character: 'storyteller',
+      dialogue: null
     })
     setCaptionOptions({
       font: 'impact',
@@ -231,6 +238,7 @@ export default function Home() {
             voiceOptions={voiceOptions}
             setVoiceStyle={setVoiceStyle}
             setVoiceCharacter={setVoiceCharacter}
+            setVideoDialogue={setVideoDialogue}
             captionOptions={captionOptions}
             setCaptionFont={setCaptionFont}
             setCaptionTextSize={setCaptionTextSize}

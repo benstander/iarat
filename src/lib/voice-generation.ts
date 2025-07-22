@@ -38,7 +38,7 @@ const ELEVENLABS_SPEAKING_RATE = {
 };
 
 // Maximum duration constants
-const MAX_VOICE_DURATION_SECONDS = 60; // 1 minute maximum
+const MAX_VOICE_DURATION_SECONDS = 120; // 2 minute maximum to allow script completion
 const MIN_VOICE_DURATION_SECONDS = 5;  // 5 seconds minimum
 
 // Voice character mapping to ElevenLabs voice IDs

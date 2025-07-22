@@ -12,6 +12,7 @@ export type {
   VoiceOptions,
   VoiceStyle,
   VoiceCharacter,
+  VideoDialogue,
   CaptionOptions,
   CaptionFont,
   CaptionTextSize,
