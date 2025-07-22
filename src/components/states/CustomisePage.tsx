@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { SparklesIcon } from "@heroicons/react/24/outline"
 import { 
   Select,
   SelectContent,
@@ -41,7 +42,7 @@ interface CustomisePageProps {
   setCaptionPosition: (position: CaptionPosition) => void
   topics: Topic[]
   setTopics: (topics: Topic[]) => void
-  generateReel: () => void
+  generateReel: (customInstructions?: string) => void
   isProcessing: boolean
 }
 
@@ -64,6 +65,8 @@ export default function CustomisePage({
   isProcessing
 }: CustomisePageProps) {
   const [currentTab, setCurrentTab] = useState<CustomiseTab>('video')
+  const [isEnhanceMode, setIsEnhanceMode] = useState(false)
+  const [customInstructions, setCustomInstructions] = useState('')
   const minecraftVideoRef = useRef<HTMLVideoElement>(null)
   const subwayVideoRef = useRef<HTMLVideoElement>(null)
   const megaRampVideoRef = useRef<HTMLVideoElement>(null)
@@ -86,6 +89,21 @@ export default function CustomisePage({
 
   // Toggle topic selection (single selection only)
   const toggleTopic = (topicId: string) => {
+    // Check if we're selecting a different topic than the currently selected one
+    const currentlySelected = topics.find(topic => topic.selected)
+    
+    // Clear custom instructions and exit enhance mode only if selecting a different topic
+    if (currentlySelected && currentlySelected.id !== topicId) {
+      setCustomInstructions('')
+      setIsEnhanceMode(false)
+    }
+    
+    // Clear custom instructions and exit enhance mode if deselecting the current topic
+    if (currentlySelected && currentlySelected.id === topicId) {
+      setCustomInstructions('')
+      setIsEnhanceMode(false)
+    }
+    
     setTopics(topics.map(topic => {
       if (topic.id === topicId) {
         // If clicking the already selected topic, deselect it
@@ -97,13 +115,32 @@ export default function CustomisePage({
     }))
   }
 
+  // Handle enhance button click
+  const handleEnhanceClick = () => {
+    const selectedTopic = topics.find(topic => topic.selected)
+    if (!selectedTopic) {
+      alert("Please select a topic first!")
+      return
+    }
+    setIsEnhanceMode(true)
+  }
+
+  // Handle back to topics
+  const handleBackToTopics = () => {
+    setIsEnhanceMode(false)
+  }
+
   // Get continue button text based on current tab
   const getContinueButtonText = () => {
     switch (currentTab) {
       case 'video': return 'Continue to voice'
       case 'voice': return 'Continue to captions'
       case 'captions': return 'Continue to topics'
-      case 'topics': return isProcessing ? 'Generating video...' : 'Generate video'
+      case 'topics': 
+        if (isEnhanceMode) {
+          return isProcessing ? 'Generating enhanced video...' : 'Generate enhanced video'
+        }
+        return isProcessing ? 'Generating video...' : 'Generate video'
       default: return 'Continue'
     }
   }
@@ -126,7 +163,14 @@ export default function CustomisePage({
           alert("Please select a topic!")
           return
         }
-        generateReel()
+        
+        if (isEnhanceMode && customInstructions.trim() === '') {
+          alert("Please provide custom instructions for enhancement!")
+          return
+        }
+        
+        // Pass custom instructions to generateReel function if in enhance mode
+        generateReel(isEnhanceMode ? customInstructions : undefined)
         break
     }
   }
@@ -437,25 +481,77 @@ export default function CustomisePage({
       case 'topics':
         return (
           <div className="space-y-4 pr-2">
-            <h3 className="text-md font-medium">Generated topics</h3>
-            {topics.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <p>No topics available. Please go back to the landing page to process your content.</p>
-              </div>
-            ) : (
-              topics.map((topic) => (
-                <div
-                  key={topic.id}
-                  onClick={() => toggleTopic(topic.id)}
-                  className={`w-full px-6 py-4 rounded-full text-sm text-black font-medium border capitalize cursor-pointer ${
-                    topic.selected
-                       ? 'border-pink-500 bg-pink-50 border-[1.5px]'
-                       : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-100'
-                  }`}
-                >
-                  {topic.title}
+            {!isEnhanceMode ? (
+              <>
+                {/* Header with Generated topics and Enhance button */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-md font-medium">Generated topics</h3>
+                  <Button
+                    onClick={handleEnhanceClick}
+                    variant="outline"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white text-black ${
+                      customInstructions.trim() !== ''
+                        ? 'border-pink-500 bg-pink-50 border-[1.5px]'
+                        : 'border border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <SparklesIcon className="w-4 h-4" />
+                    Enhance
+                  </Button>
                 </div>
-              ))
+                
+                {/* Topics List */}
+                {topics.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">
+                    <p>No topics available. Please go back to the landing page to process your content.</p>
+                  </div>
+                ) : (
+                  topics.map((topic) => (
+                    <div
+                      key={topic.id}
+                      onClick={() => toggleTopic(topic.id)}
+                      className={`w-full px-6 py-4 rounded-full text-sm text-black font-medium border capitalize cursor-pointer ${
+                        topic.selected
+                           ? 'border-pink-500 bg-pink-50 border-[1.5px]'
+                           : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                      }`}
+                    >
+                      {topic.title}
+                    </div>
+                  ))
+                )}
+              </>
+            ) : (
+              <>
+                {/* Custom Instructions Interface */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-md font-medium">
+                      {topics.find(topic => topic.selected)?.title || 'Selected Topic'}
+                    </h3>
+                    <Button
+                      onClick={handleBackToTopics}
+                      variant="outline"
+                      className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 hover:border-gray-300 bg-white text-black"
+                    >
+                      Back
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <label className="text-md font-semibold text-gray-700 block">
+                      Custom instructions
+                    </label>
+                    <textarea
+                      value={customInstructions}
+                      onChange={(e) => setCustomInstructions(e.target.value)}
+                      placeholder="Type your custom instructions here ..."
+                      className="w-full min-h-[400px] px-4 py-2 border border-gray-200 !rounded-lg resize-none focus:outline-none focus:ring-0 focus:border-gray-200 focus:!rounded-lg text-sm bg-white"
+                      style={{ borderRadius: '8px', minHeight: '200px', paddingTop: '12px' }}
+                    />
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )
@@ -498,7 +594,11 @@ export default function CustomisePage({
           {/* Continue Button - Always at bottom */}
           <Button
             onClick={handleContinue}
-            disabled={isProcessing || (currentTab === 'topics' && topics.filter(topic => topic.selected).length === 0)}
+            disabled={
+              isProcessing || 
+              (currentTab === 'topics' && topics.filter(topic => topic.selected).length === 0) ||
+              (currentTab === 'topics' && isEnhanceMode && customInstructions.trim() === '')
+            }
             className="w-full py-7 text-md font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-600 text-white hover:from-pink-500 hover:to-pink-700 disabled:opacity-50"
           >
             {getContinueButtonText()}

@@ -8,6 +8,7 @@ interface ScriptGenerationOptions {
   videoStyle?: 'brainrot' | 'academic' | 'unhinged';
   videoDialogue?: 'explainer' | 'debater' | 'socratic' | 'narrative' | 'examples' | 'quiz' | null;
   maxDurationSeconds?: number;
+  customInstructions?: string;
 }
 
 // Constants for timing calculations
@@ -131,7 +132,8 @@ export async function generateVideoScript({
   brainrotStyle = 'engaging and modern',
   videoStyle = 'brainrot',
   videoDialogue = null,
-  maxDurationSeconds = 60
+  maxDurationSeconds = 60,
+  customInstructions
 }: ScriptGenerationOptions): Promise<string> {
   if (!textContent) {
     throw new Error('Text content is required');
@@ -145,6 +147,9 @@ export async function generateVideoScript({
   console.log(`- Video style: ${videoStyle}`);
   console.log(`- Target duration: ${targetDuration}s`);
   console.log(`- Recommended words: ${recommendedWords}`);
+  if (customInstructions) {
+    console.log(`- Custom instructions: ${customInstructions}`);
+  }
 
   // Get style-specific prompt components
   const stylePrompt = getStylePrompt(videoStyle);
@@ -155,7 +160,10 @@ export async function generateVideoScript({
 
 Content to work with: ${textContent}
 
-WRITE A VOICEOVER SCRIPT that:
+${customInstructions ? `CUSTOM INSTRUCTIONS: You MUST incorporate these specific instructions into the script:
+${customInstructions}
+
+` : ''}WRITE A VOICEOVER SCRIPT that:
 
 DURATION GUIDANCE: 
 - Target approximately ${recommendedWords} words for optimal ${targetDuration}-second timing
