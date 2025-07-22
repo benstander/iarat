@@ -58,15 +58,13 @@ export async function POST(req: NextRequest) {
           let scriptToUse = summary.script;
           
           if (!scriptToUse && summary.content && voiceOptions?.style) {
-            console.log(`Generating script for topic "${summary.topicTitle}" with voice style: ${voiceOptions.style}`);
-            scriptToUse = await generateScriptForTopic(summary, voiceOptions.style);
+            console.log(`Generating script for topic "${summary.topicTitle}" with voice style: ${voiceOptions.style} and dialogue: ${voiceOptions.dialogue}`);
+            scriptToUse = await generateScriptForTopic(summary, voiceOptions.style, voiceOptions.dialogue);
           }
           
           if (!scriptToUse) {
             throw new Error(`No script available for topic: ${summary.topicTitle}`);
           }
-          
-          console.log('Script:', scriptToUse);
           
           const result = await generateSingleVideo({
             script: scriptToUse,
@@ -175,7 +173,8 @@ async function generateSingleVideo({
       const voiceResult = await generateVoice({ 
         text: ttsScript, 
         voiceOptions: {
-          ...voiceOptions,
+          style: voiceOptions?.style || 'academic',
+          character: voiceOptions?.character || 'storyteller',
           backgroundVideo: backgroundVideo // Pass background video for "match celeb" functionality
         }
       });

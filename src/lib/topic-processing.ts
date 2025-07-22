@@ -104,16 +104,18 @@ export async function processTextIntoTopics({
   return summaries;
 }
 
-// New function to generate script for a specific topic with voice style
+// New function to generate script for a specific topic with voice options
 export async function generateScriptForTopic(
   topicSummary: TopicSummary, 
-  voiceStyle: 'academic' | 'brainrot' | 'unhinged' = 'brainrot'
+  voiceStyle: 'academic' | 'brainrot' | 'unhinged' = 'brainrot',
+  videoDialogue?: 'explainer' | 'debater' | 'socratic' | 'narrative' | 'examples' | 'quiz' | null
 ): Promise<string> {
-  console.log(`Generating script for topic: ${topicSummary.topicTitle} with voice style: ${voiceStyle}`);
+  console.log(`Generating script for topic: ${topicSummary.topicTitle} with voice style: ${voiceStyle} and dialogue: ${videoDialogue}`);
   
   const script = await generateVideoScript({
     textContent: `${topicSummary.topicTitle}: ${topicSummary.content}`,
-    videoStyle: voiceStyle
+    videoStyle: voiceStyle,
+    videoDialogue: videoDialogue
   });
 
   return script;
