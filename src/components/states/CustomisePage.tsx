@@ -22,7 +22,8 @@ import {
   CaptionTextSize,
   CaptionPosition,
   Topic,
-  CustomiseTab
+  CustomiseTab,
+  VideoDialogue
 } from "./types"
 
 interface CustomisePageProps {
@@ -33,6 +34,7 @@ interface CustomisePageProps {
   voiceOptions: VoiceOptions
   setVoiceStyle: (style: VoiceStyle) => void
   setVoiceCharacter: (character: VoiceCharacter) => void
+  setVideoDialogue: (dialogue: VideoDialogue) => void
   captionOptions: CaptionOptions
   setCaptionFont: (font: CaptionFont) => void
   setCaptionTextSize: (textSize: CaptionTextSize) => void
@@ -51,6 +53,7 @@ export default function CustomisePage({
   voiceOptions,
   setVoiceStyle,
   setVoiceCharacter,
+  setVideoDialogue,
   captionOptions,
   setCaptionFont,
   setCaptionTextSize,
@@ -202,7 +205,7 @@ export default function CustomisePage({
               <h3 className="text-md font-medium">Background video</h3>
               
               {/* First row - Gaming videos */}
-              <div className="flex gap-2 w-full">
+              <div className="flex gap-4 w-full">
                 {(['minecraft', 'subway', 'mega-ramp'] as const).map((game) => (
                   <Button
                     key={game}
@@ -225,7 +228,7 @@ export default function CustomisePage({
               </div>
 
               {/* Second row - First 3 celebrities */}
-              <div className="flex gap-2 w-full">
+              <div className="flex gap-4 w-full">
                 {(['lebron', 'ronaldo', 'trump'] as const).map((celebrity) => (
                   <Button
                     key={celebrity}
@@ -242,13 +245,14 @@ export default function CustomisePage({
                   >
                     {celebrity === 'lebron' ? 'LeBron' : 
                      celebrity === 'ronaldo' ? 'Ronaldo' :
-                     'Trump'}
+                     celebrity === 'trump' ? 'Trump' :
+                     ''}
                   </Button>
                 ))}
               </div>
 
               {/* Third row - Last 3 celebrities */}
-              <div className="flex gap-2 w-full">
+              <div className="flex gap-4 w-full">
                 {(['theo-von', 'matthew-mc', 'elon-musk'] as const).map((celebrity) => (
                   <Button
                     key={celebrity}
@@ -265,7 +269,8 @@ export default function CustomisePage({
                   >
                     {celebrity === 'theo-von' ? 'Theo Von' :
                      celebrity === 'matthew-mc' ? 'McConaughey' :
-                     'Elon Musk'}
+                     celebrity === 'elon-musk' ? 'Elon Musk' :
+                     ''}
                   </Button>
                 ))}
               </div>
@@ -278,7 +283,7 @@ export default function CustomisePage({
           <div className="space-y-8">
             {/* Voice style */}
             <div className="space-y-4">
-              <h3 className="text-md font-medium">Voice style</h3>
+              <h3 className="text-md font-medium">Voice mode</h3>
               <div className="flex gap-4 w-full">
                 {(['academic', 'brainrot', 'unhinged'] as const).map((style) => (
                   <Button
@@ -299,7 +304,7 @@ export default function CustomisePage({
 
             {/* Voice character */}
             <div className="space-y-4">
-              <h3 className="text-md font-medium">Voice character</h3>
+              <h3 className="text-md font-medium">Voiceover</h3>
               <div className="flex gap-4 w-full">
                 {(['storyteller', 'asmr', 'match celeb'] as const).map((character) => (
                   <Button
@@ -319,7 +324,46 @@ export default function CustomisePage({
                 ))}
               </div>
             </div>
+
+          {/* First row dialogue */}
+          <div className="space-y-4">
+            <h3 className="text-md font-medium">Video dialogue</h3>
+            <div className="flex gap-4 w-full">
+              {(['explainer', 'debater', 'socratic'] as const).map((dialogue) => (
+                <Button
+                  key={dialogue}
+                  onClick={() => setVideoDialogue(voiceOptions.dialogue === dialogue ? null : dialogue)}
+                  variant="outline"
+                  className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border capitalize ${
+                    voiceOptions.dialogue === dialogue
+                      ? 'border-pink-500 bg-pink-50 border-[1.5px]'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  {dialogue}
+                </Button>
+              ))}
+            </div>
+
+            {/* Second row dialogue */} 
+            <div className="flex gap-4 w-full">
+              {(['narrative', 'examples', 'quiz'] as const).map((dialogue) => (
+                <Button
+                  key={dialogue}
+                  onClick={() => setVideoDialogue(voiceOptions.dialogue === dialogue ? null : dialogue)}
+                  variant="outline"
+                  className={`flex-1 px-0 py-6 rounded-full text-sm text-black bg-white border capitalize ${
+                    voiceOptions.dialogue === dialogue
+                      ? 'border-pink-500 bg-pink-50 border-[1.5px]'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  {dialogue}
+                </Button>
+              ))}
+            </div>
           </div>
+        </div>
         )
 
       case 'captions':

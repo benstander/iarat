@@ -14,11 +14,13 @@ export interface BackgroundVideoSelection {
 // Voice types
 export type VoiceStyle = 'academic' | 'brainrot' | 'unhinged' | null
 export type VoiceCharacter = 'storyteller' | 'asmr' | 'match celeb' | null
+export type VideoDialogue = 'explainer' | 'debater' | 'socratic' | 'narrative' | 'examples' | 'quiz' | null
 
 // Voice options
 export interface VoiceOptions {
   style: VoiceStyle
   character: VoiceCharacter
+  dialogue: VideoDialogue
 }
 
 // Caption types
