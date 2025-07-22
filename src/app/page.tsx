@@ -140,7 +140,7 @@ export default function Home() {
   }
 
   // Generate video from customise page
-  const generateReel = async () => {
+  const generateReel = async (customInstructions?: string) => {
     const selectedTopics = topics.filter(topic => topic.selected)
     
     if (selectedTopics.length === 0) {
@@ -162,14 +162,15 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-                  body: JSON.stringify({
-            summaries: selectedSummaries.length > 0 ? selectedSummaries : topicSummaries.slice(0, selectedTopics.length),
-            backgroundVideo: backgroundVideoSelection.video || 'mega-ramp',
-            voiceEnabled: true,
-            videoFormat,
-            voiceOptions,
-            captionOptions,
-          }),
+        body: JSON.stringify({
+          summaries: selectedSummaries.length > 0 ? selectedSummaries : topicSummaries.slice(0, selectedTopics.length),
+          backgroundVideo: backgroundVideoSelection.video || 'mega-ramp',
+          voiceEnabled: true,
+          videoFormat,
+          voiceOptions,
+          captionOptions,
+          customInstructions,
+        }),
       })
 
       if (!videoResponse.ok) {

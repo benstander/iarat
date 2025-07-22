@@ -31,7 +31,7 @@ function replaceFrWithForReal(text: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { script, summaries, backgroundVideo, voiceEnabled = true, voiceOptions, captionOptions } = body;
+    const { script, summaries, backgroundVideo, voiceEnabled = true, voiceOptions, captionOptions, customInstructions } = body;
 
     console.log('=== API Request Debug ===');
     console.log('Voice options received in API:', voiceOptions);
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
           
           if (!scriptToUse && summary.content && voiceOptions?.style) {
             console.log(`Generating script for topic "${summary.topicTitle}" with voice style: ${voiceOptions.style} and dialogue: ${voiceOptions.dialogue}`);
-            scriptToUse = await generateScriptForTopic(summary, voiceOptions.style, voiceOptions.dialogue);
+            scriptToUse = await generateScriptForTopic(summary, voiceOptions.style, voiceOptions.dialogue, customInstructions);
           }
           
           if (!scriptToUse) {

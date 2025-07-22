@@ -108,14 +108,19 @@ export async function processTextIntoTopics({
 export async function generateScriptForTopic(
   topicSummary: TopicSummary, 
   voiceStyle: 'academic' | 'brainrot' | 'unhinged' = 'brainrot',
-  videoDialogue?: 'explainer' | 'debater' | 'socratic' | 'narrative' | 'examples' | 'quiz' | null
+  videoDialogue?: 'explainer' | 'debater' | 'socratic' | 'narrative' | 'examples' | 'quiz' | null,
+  customInstructions?: string
 ): Promise<string> {
   console.log(`Generating script for topic: ${topicSummary.topicTitle} with voice style: ${voiceStyle} and dialogue: ${videoDialogue}`);
+  if (customInstructions) {
+    console.log(`Custom instructions provided: ${customInstructions}`);
+  }
   
   const script = await generateVideoScript({
     textContent: `${topicSummary.topicTitle}: ${topicSummary.content}`,
     videoStyle: voiceStyle,
-    videoDialogue: videoDialogue
+    videoDialogue: videoDialogue,
+    customInstructions
   });
 
   return script;
