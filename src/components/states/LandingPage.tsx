@@ -118,7 +118,7 @@ export default function LandingPage({
             loop
             muted
             playsInline
-            src="https://fvosffjhogwahewymkjj.supabase.co/storage/v1/object/public/generated-videos//video_1752327164073_topic3.mp4"
+            src="https://fqhwmtxbazkfkrgwrmzq.supabase.co/storage/v1/object/public/background-videos/landing/ronaldo-landing.mp4"
           >
             Your browser does not support the video tag.
           </video>
