@@ -1,6 +1,58 @@
 recaps 
 ffmpeg 
 
+## Supabase Authentication Setup
+
+### Overview
+Authentication is now integrated using Supabase to protect video generation. Users can:
+- Browse and customize video settings without signing in
+- Must sign in or create an account to generate videos
+- Sign in with email/password or Google OAuth
+
+### Setup Instructions
+
+1. **Create a Supabase Project**
+   - Go to [supabase.com](https://supabase.com) and create a new project
+   - Wait for the project to be fully initialized
+
+2. **Configure Environment Variables**
+   Create a `.env.local` file in the project root with:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   ```
+
+3. **Find Your Supabase Credentials**
+   - Go to your Supabase project dashboard
+   - Navigate to Settings → API
+   - Copy the Project URL and API Keys:
+     - `NEXT_PUBLIC_SUPABASE_URL` = Project URL
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = `anon` `public` key
+     - `SUPABASE_SERVICE_ROLE_KEY` = `service_role` `secret` key
+
+4. **Enable Authentication Providers** (Optional - for Google Auth)
+   - In Supabase dashboard, go to Authentication → Providers
+   - Enable Google provider and configure OAuth credentials
+
+5. **Configure Email Settings** (Optional - for email confirmation)
+   - Go to Authentication → Settings
+   - Configure SMTP settings for email confirmation
+
+### Authentication Flow
+- **Landing Page**: Users can access all features
+- **Customization Page**: Users can edit all settings without authentication
+  - Shows a notice when on the Topics tab that sign-in is required for generation
+- **Video Generation**: Triggers authentication modal if user not signed in
+- **Header**: Shows sign in/up buttons or user menu with sign out option
+
+### Components Added
+- `AuthContext` (`src/lib/auth-context.tsx`): Manages authentication state
+- `AuthModal` (`src/components/auth/AuthModal.tsx`): Login/signup modal
+- Updated `Header` component with authentication state
+- Updated `CustomisePage` with authentication notices
+- Protected video generation in main app
+
 ## Progress Bar Integration
 
 ### Overview

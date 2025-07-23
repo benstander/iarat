@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
   // Import types and components
 import { 
@@ -25,12 +26,15 @@ import {
 
 // Import shared components
 import Header from "@/components/shared/Header"
+import { useAuth } from "@/lib/auth-context"
 
 export default function Home() {
+  const { user } = useAuth()
+  const router = useRouter()
   const [currentState, setCurrentState] = useState<'landing' | 'customise' | 'finished'>('landing')
   const [lectureLink, setLectureLink] = useState("")
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [videoFormat, setVideoFormat] = useState<VideoFormat>('summary')
+  const [videoFormat, setVideoFormat] = useState<VideoFormat>('fullscreen')
   const [backgroundVideoSelection, setBackgroundVideoSelection] = useState<BackgroundVideoSelection>({
     category: 'gaming',
     video: 'subway'
@@ -139,8 +143,15 @@ export default function Home() {
     }
   }
 
-  // Generate video from customise page
+  // Generate video from customise page - NOW PROTECTED BY AUTH
   const generateReel = async (customInstructions?: string) => {
+    // Check if user is authenticated
+    if (!user) {
+      // Redirect to auth page instead of opening modal
+      router.push('/auth')
+      return
+    }
+
     const selectedTopics = topics.filter(topic => topic.selected)
     
     if (selectedTopics.length === 0) {
@@ -170,6 +181,7 @@ export default function Home() {
           voiceOptions,
           captionOptions,
           customInstructions,
+          userId: user.id, // Include user ID for tracking
         }),
       })
 
@@ -196,7 +208,7 @@ export default function Home() {
     setLectureLink("")
     setUploadedFile(null)
     setGeneratedVideoUrl("")
-    setVideoFormat('summary')
+    setVideoFormat('fullscreen')
     setBackgroundVideoSelection({
       category: 'gaming',
       video: 'subway'
