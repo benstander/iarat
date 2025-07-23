@@ -39,7 +39,7 @@ export default function LandingPage({
         <div className="gap-6 flex flex-col">
           <h2 className="text-4xl font-bold leading-tight">
             Turn your lecture into<br />
-            engaging, <span className="text-pink-500">brainrot</span> reels.
+            engaging, <span className="text-pink-500">short-form</span> reels.
           </h2>
           <p className="text-2xl text-gray-700">
             Doomscroll your way to a distinction.
@@ -104,7 +104,7 @@ export default function LandingPage({
             disabled={isProcessing || (!lectureLink.trim() && !uploadedFile)}
             className="w-full py-7 text-md font-semibold rounded-full bg-gradient-to-r from-pink-400 to-pink-600 text-white hover:from-pink-500 hover:to-pink-700 disabled:opacity-50"
           >
-            {isProcessing ? "Splitting into topics..." : "Convert to Brainrot"}
+            {isProcessing ? "Splitting into topics..." : "Convert to reels"}
           </Button>
         </div>
       </div>

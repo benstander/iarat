@@ -189,7 +189,7 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Google Sign In */}
+            {/* Google Sign In
             <Button
               variant="outline"
               type="button"
@@ -219,7 +219,7 @@ export default function AuthPage() {
                 />
               </svg>
               Continue with Google
-            </Button>
+            </Button> */}
 
             {/* Toggle between login/signup */}
             <div className="text-center mt-8">

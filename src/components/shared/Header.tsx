@@ -4,7 +4,7 @@ import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { User, LogOut } from "lucide-react"
+import { User, LogOut, Crown, ExternalLink } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function Header() {
@@ -23,6 +23,11 @@ export default function Header() {
 
   const handleSignUp = () => {
     router.push('/auth?mode=signup')
+  }
+
+  const handleUpgradePlan = () => {
+    // Add upgrade plan logic here
+    setShowUserMenu(false)
   }
 
   if (loading) {
@@ -48,33 +53,42 @@ export default function Header() {
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded-md transition-colors"
               >
-                <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-pink-600 rounded-md flex items-center justify-center">
+                <div className="w-12 h-12 bg-black rounded-md flex items-center justify-center hover:bg-gray-600">
                   <User className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">{user.email}</span>
               </button>
               
               {showUserMenu && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-md shadow-md border border-gray-200 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-pink-600 rounded-sm flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  {/* User Email */}
+                  <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-100 mb-2">
+                      <User className="w-4 h-4 text-gray-900" />
+                      <div className="text-sm font-regular text-gray-900">{user.email}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{user.email}</p>
-                      </div>
-                    </div>
                   </div>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 flex items-center gap-2"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign out
-                  </button>
+                  
+                  {/* Menu Items */}
+                  <div className="py-1">
+                    {/* Upgrade Plan */}
+                    <button
+                      onClick={handleUpgradePlan}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                    >
+                      <Crown className="w-4 h-4" />
+                      Upgrade plan
+                    </button>
+                    
+                    {/* Log Out */}
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Log out
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
