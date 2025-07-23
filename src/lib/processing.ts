@@ -1,6 +1,6 @@
 import ytdl from 'ytdl-core'
 // import { googleSTTService } from './google-stt'
-import { supabase } from './supabase';
+import { supabase } from './supabaseClient';
 
 const MINECRAFT_VIDEOS = [
   'mp1.mp4',
