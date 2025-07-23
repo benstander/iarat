@@ -4,7 +4,6 @@ import fs from 'fs/promises';
 import https from 'https';
 import http from 'http';
 import { URL } from 'url';
-import { googleSTTService } from './google-stt';
 import type { WordTimestamp } from './voice-generation';
 import crypto from 'crypto';
 
@@ -34,8 +33,6 @@ export class FFmpegVideoRenderer {
   private static readonly VIDEO_WIDTH = 1080;
   private static readonly VIDEO_HEIGHT = 1920;
   private static readonly FPS = 30; // Reduced from 45 for better compatibility
-  private static readonly DEFAULT_FONT_SIZE = 26;
-  private static readonly DEFAULT_FONT_FAMILY = 'Arial Black';
 
   // Caption font mappings
   private static readonly CAPTION_FONT_MAP = {
@@ -202,173 +199,6 @@ export class FFmpegVideoRenderer {
       return true;
     } catch {
       return false;
-    }
-  }
-
-
-
-  /**
-   * Transcribe voice audio with word-level timestamps using Google Speech-to-Text
-   */
-  private static async transcribeVoiceAudio(audioPath: string): Promise<WordTimestamp[]> {
-    try {
-      console.log('Transcribing voice audio with word-level timestamps using Google STT...');
-      
-      // Read the audio file
-      const audioBuffer = await fs.readFile(audioPath);
-      
-      // Ensure Google Cloud Storage bucket exists
-      await googleSTTService.ensureBucketExists();
-      
-      // Transcribe with word-level timestamps using Google STT
-      const result = await googleSTTService.transcribeAudio(audioBuffer, 'en-US');
-      
-      // Extract word-level timestamps from the response
-      let wordTimestamps: WordTimestamp[] = [];
-      
-      // Use Google STT word timestamps if available
-      if (result.wordTimestamps && result.wordTimestamps.length > 0) {
-        wordTimestamps = result.wordTimestamps.map(wt => ({
-          word: wt.word.trim(),
-          startTime: wt.startTime,
-          endTime: wt.endTime,
-        }));
-      }
-      
-      // If no word-level timestamps, fall back to sentence-level estimation
-      if (wordTimestamps.length === 0) {
-        console.warn('No word-level timestamps found, creating estimated timestamps from text');
-        const text = result.text || '';
-        const words = text.split(/\s+/).filter((w: string) => w.trim().length > 0);
-        
-        // Estimate timing based on average speech rate
-        const AVERAGE_WORDS_PER_SECOND = 2.5; // Conservative estimate
-        const totalDuration = words.length / AVERAGE_WORDS_PER_SECOND;
-        const timePerWord = totalDuration / words.length;
-        
-        words.forEach((word: string, index: number) => {
-          wordTimestamps.push({
-            word: word.trim(),
-            startTime: index * timePerWord,
-            endTime: (index + 1) * timePerWord,
-          });
-        });
-      }
-      
-      console.log(`Extracted ${wordTimestamps.length} word timestamps from audio`);
-      console.log('Sample timestamps:', wordTimestamps.slice(0, 10));
-      
-      return wordTimestamps;
-      
-    } catch (error) {
-      console.error('Failed to transcribe voice audio:', error);
-      throw new Error(`Voice transcription failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Generate captions from voice audio transcription with precise timing
-   */
-  public static async generateCaptionsFromAudio(voiceAudioPath: string): Promise<CaptionChunk[]> {
-    try {
-      // Get word-level timestamps from voice audio
-      const wordTimestamps = await this.transcribeVoiceAudio(voiceAudioPath);
-      
-      if (wordTimestamps.length === 0) {
-        console.warn('No word timestamps found, falling back to empty captions');
-        return [];
-      }
-      
-      // Group words intelligently into caption chunks
-      const chunks: CaptionChunk[] = [];
-      let currentWordIndex = 0;
-      
-      while (currentWordIndex < wordTimestamps.length) {
-        const remainingWords = wordTimestamps.length - currentWordIndex;
-        
-        // Get the words for analysis
-        const words = wordTimestamps.slice(currentWordIndex).map(wt => wt.word);
-        const chunkSize = this.determineIntelligentChunkSize(words, 0, remainingWords);
-        
-        // Create chunk from word timestamps
-        const chunkWordTimestamps = wordTimestamps.slice(currentWordIndex, currentWordIndex + chunkSize);
-        const chunkText = chunkWordTimestamps.map(wt => wt.word).join(' ').toLowerCase();
-        
-        // Use precise timing from transcription (no padding initially)
-        const startTime = chunkWordTimestamps[0].startTime;
-        const endTime = chunkWordTimestamps[chunkWordTimestamps.length - 1].endTime;
-        
-        chunks.push({
-          text: chunkText,
-          startTime: startTime,
-          endTime: endTime,
-        });
-        
-        currentWordIndex += chunkSize;
-      }
-      
-      // Post-process to ensure no overlaps and reasonable duration
-      const MIN_CAPTION_DURATION = 0.5; // Minimum readable duration
-      const MAX_CAPTION_DURATION = 4.0; // Maximum for very long phrases
-      const CAPTION_GAP = 0.1; // Gap between captions to ensure clean transitions
-      
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        
-        // First, determine the maximum possible end time
-        let maxEndTime = chunk.endTime;
-        
-        // If there's a next caption, ensure we don't overlap with it
-        if (i < chunks.length - 1) {
-          const nextChunk = chunks[i + 1];
-          maxEndTime = Math.min(maxEndTime, nextChunk.startTime - CAPTION_GAP);
-        }
-        
-        // Apply minimum duration if possible
-        const currentDuration = maxEndTime - chunk.startTime;
-        if (currentDuration < MIN_CAPTION_DURATION) {
-          // Try to extend the caption, but don't overlap with next
-          const desiredEndTime = chunk.startTime + MIN_CAPTION_DURATION;
-          if (i < chunks.length - 1) {
-            const nextChunk = chunks[i + 1];
-            maxEndTime = Math.min(desiredEndTime, nextChunk.startTime - CAPTION_GAP);
-          } else {
-            maxEndTime = desiredEndTime;
-          }
-        }
-        
-        // Apply maximum duration limit
-        if (maxEndTime - chunk.startTime > MAX_CAPTION_DURATION) {
-          maxEndTime = chunk.startTime + MAX_CAPTION_DURATION;
-        }
-        
-        // Set the final end time
-        chunk.endTime = maxEndTime;
-      }
-      
-      // Final pass: ensure absolutely no overlaps
-      for (let i = 0; i < chunks.length - 1; i++) {
-        const currentChunk = chunks[i];
-        const nextChunk = chunks[i + 1];
-        
-        // If there's still an overlap, prioritize the next caption
-        if (currentChunk.endTime > nextChunk.startTime - CAPTION_GAP) {
-          currentChunk.endTime = nextChunk.startTime - CAPTION_GAP;
-        }
-      }
-      
-      // Debug logging
-      console.log(`Generated ${chunks.length} caption chunks from voice audio transcription (no overlaps):`);
-      chunks.forEach((chunk, index) => {
-        const duration = chunk.endTime - chunk.startTime;
-        console.log(`  ${index + 1}. [${chunk.startTime.toFixed(2)}s - ${chunk.endTime.toFixed(2)}s] (${duration.toFixed(2)}s) "${chunk.text}"`);
-      });
-      
-      return chunks;
-      
-    } catch (error) {
-      console.error('Failed to generate captions from audio:', error);
-      throw new Error(`Caption generation from audio failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -760,19 +590,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       } catch (error) {
         console.warn('Failed to generate captions from ElevenLabs timestamps, falling back:', error);
         captions = [];
-      }
-    }
-    
-    if (captions.length === 0) {
-      // Fallback to audio transcription
-      try {
-        console.log('Attempting audio transcription for caption generation...');
-        captions = await this.generateCaptionsFromAudio(localVoiceAudio);
-        console.log(`Generated ${captions.length} caption chunks from voice audio transcription`);
-      } catch (error) {
-        console.warn('Failed to generate captions from audio, using script-based estimation:', error);
-        captions = this.generateCaptions(script, audioDurationInSeconds);
-        console.log(`Generated ${captions.length} caption chunks from script (final fallback)`);
       }
     }
 
