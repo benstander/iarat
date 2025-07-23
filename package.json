@@ -26,7 +26,6 @@
     "clsx": "^2.1.1",
     "elevenlabs": "^0.8.2",
     "form-data": "^4.0.3",
-    "groq-sdk": "^0.27.0",
     "lucide-react": "^0.525.0",
     "multer": "^2.0.1",
     "next": "15.3.5",
