@@ -106,7 +106,7 @@ export default function AuthPage() {
 
       {/* Auth Form */}
       <div className="flex-1 flex items-center justify-center px-8 py-12">
-        <div className="w-[200px] border border-gray-200 rounded-xl shadow-md bg-white">
+        <div className="w-[550px] border border-gray-200 rounded-xl shadow-md bg-white">
           <div className="p-12">
             {/* Header */}
             <div className="text-center mb-10">
