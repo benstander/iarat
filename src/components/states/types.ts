@@ -1,4 +1,4 @@
-export type VideoFormat = 'summary' | 'splitscreen' | 'quiz' | null
+export type VideoFormat = 'fullscreen' | 'splitscreen' | null
 export type BackgroundVideoCategory = 'gaming' | 'celebrities' | null
 export type GamingVideo = 'minecraft' | 'subway' | 'mega-ramp' | null
 export type CelebrityVideo = 'lebron' | 'ronaldo' | 'trump' | 'theo-von' | 'matthew-mc' | 'elon-musk' | null

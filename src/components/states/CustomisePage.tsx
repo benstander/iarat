@@ -224,9 +224,8 @@ export default function CustomisePage({
               <h3 className="text-md font-medium">Video format</h3>
               <div className="flex gap-4 w-full">
                 {([
-                  { value: 'summary', label: 'Summary' },
+                  { value: 'fullscreen', label: 'Full Screen' },
                   { value: 'splitscreen', label: 'Split Screen' },
-                  { value: 'quiz', label: 'Quiz' }
                 ] as const).map(({ value, label }) => (
                   <Button
                     key={value}
