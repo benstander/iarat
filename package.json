@@ -25,7 +25,7 @@
     "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "elevenlabs": "^0.8.2",
+    "elevenlabs": "^1.59.0",
     "form-data": "^4.0.3",
     "lucide-react": "^0.525.0",
     "multer": "^2.0.1",

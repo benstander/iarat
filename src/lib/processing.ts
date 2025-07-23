@@ -1,5 +1,5 @@
 import ytdl from 'ytdl-core'
-import { googleSTTService } from './google-stt'
+// import { googleSTTService } from './google-stt'
 import { supabase } from './supabase';
 
 const MINECRAFT_VIDEOS = [
@@ -71,15 +71,15 @@ export async function urlToAudioBuffer(url: string) {
     })
 }
 
-export async function transcribeAudio(audioBuffer: Buffer) {
-    // Ensure Google Cloud Storage bucket exists
-    await googleSTTService.ensureBucketExists();
+// export async function transcribeAudio(audioBuffer: Buffer) {
+//     // Ensure Google Cloud Storage bucket exists
+//     await googleSTTService.ensureBucketExists();
     
-    // Use Google Speech-to-Text for transcription
-    const result = await googleSTTService.transcribeAudio(audioBuffer, 'en-US');
+//     // Use Google Speech-to-Text for transcription
+//     const result = await googleSTTService.transcribeAudio(audioBuffer, 'en-US');
 
-    return result.text
-}
+//     return result.text
+// }
 
 export function getRandomMinecraftVideoUrl() {
   const randomIndex = Math.floor(Math.random() * MINECRAFT_VIDEOS.length);
