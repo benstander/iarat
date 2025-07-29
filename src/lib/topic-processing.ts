@@ -26,15 +26,15 @@ export async function processTextIntoTopics({
   contentType = 'PDF'
 }: ProcessTopicsParams): Promise<TopicSummary[]> {
   
-  console.log('Extracted text length:', textContent.length);
-  console.log('Processing content type:', contentType);
+  // console.log('Extracted text length:', textContent.length);
+  // console.log('Processing content type:', contentType);
 
   if (!textContent || textContent.trim().length === 0) {
     throw new Error(`No text could be extracted from the ${contentType.toLowerCase()}`);
   }
 
   // Step 1: Split text into topics using ChatGPT
-  console.log('Splitting text into topics...');
+  // console.log('Splitting text into topics...');
   const topicsResult = await generateText({
     model: openai('gpt-4o'),
     prompt: `
@@ -59,7 +59,7 @@ export async function processTextIntoTopics({
   });
 
   const topicsJson = topicsResult.text;
-  console.log('Raw topics response:', topicsJson);
+  // console.log('Raw topics response:', topicsJson);
 
   // Parse topics with improved error handling
   let topics;
@@ -90,7 +90,7 @@ export async function processTextIntoTopics({
   
   for (let i = 0; i < topics.length; i++) {
     const topic = topics[i];
-    console.log(`Preparing topic ${i + 1}: ${topic.title}`);
+    // console.log(`Preparing topic ${i + 1}: ${topic.title}`);
     
     summaries.push({
       topicTitle: topic.title,
@@ -100,7 +100,7 @@ export async function processTextIntoTopics({
     });
   }
 
-  console.log(`Prepared ${summaries.length} topic summaries (scripts will be generated when user selects voice style)`);
+  // console.log(`Prepared ${summaries.length} topic summaries (scripts will be generated when user selects voice style)`);
   return summaries;
 }
 
@@ -111,7 +111,7 @@ export async function generateScriptForTopic(
   videoDialogue?: 'explainer' | 'debater' | 'socratic' | 'narrative' | 'examples' | 'quiz' | null,
   customInstructions?: string
 ): Promise<string> {
-  console.log(`Generating script for topic: ${topicSummary.topicTitle} with voice style: ${voiceStyle} and dialogue: ${videoDialogue}`);
+  // console.log(`Generating script for topic: ${topicSummary.topicTitle} with voice style: ${voiceStyle} and dialogue: ${videoDialogue}`);
   if (customInstructions) {
     console.log(`Custom instructions provided: ${customInstructions}`);
   }
