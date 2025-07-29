@@ -78,7 +78,7 @@ function getVoiceIdFromCharacter(character?: string): string {
 // Get actual audio duration from audio buffer using ffprobe
 async function getActualAudioDuration(audioBuffer: Buffer): Promise<number> {
   try {
-    console.log('Starting ffprobe duration detection...');
+    // console.log('Starting ffprobe duration detection...');
     // We'll use ffprobe to get the actual duration
     const { spawn } = await import('child_process');
     const fs = await import('fs/promises');
@@ -89,11 +89,11 @@ async function getActualAudioDuration(audioBuffer: Buffer): Promise<number> {
     const tempDir = os.tmpdir();
     const tempFile = path.join(tempDir, `temp_audio_${Date.now()}.mp3`);
     
-    console.log(`Writing audio buffer to temp file: ${tempFile}`);
+    // console.log(`Writing audio buffer to temp file: ${tempFile}`);
     // Write buffer to temp file
     await fs.writeFile(tempFile, audioBuffer);
     
-    console.log('Running ffprobe...');
+    // console.log('Running ffprobe...');
     return new Promise((resolve, reject) => {
       const ffprobe = spawn('ffprobe', [
         '-v', 'quiet',
@@ -114,8 +114,8 @@ async function getActualAudioDuration(audioBuffer: Buffer): Promise<number> {
       });
 
       ffprobe.on('close', async (code) => {
-        console.log(`ffprobe finished with code: ${code}`);
-        console.log(`ffprobe output: "${output.trim()}"`);
+        // console.log(`ffprobe finished with code: ${code}`);
+        // console.log(`ffprobe output: "${output.trim()}"`);
         if (errorOutput) {
           console.log(`ffprobe stderr: "${errorOutput}"`);
         }
@@ -130,14 +130,14 @@ async function getActualAudioDuration(audioBuffer: Buffer): Promise<number> {
 
         if (code === 0) {
           const duration = parseFloat(output.trim());
-          console.log(`Parsed duration: ${duration}`);
+          // console.log(`Parsed duration: ${duration}`);
           if (!isNaN(duration) && duration > 0) {
             // Enforce maximum duration
             const cappedDuration = Math.min(duration, MAX_VOICE_DURATION_SECONDS);
             if (cappedDuration !== duration) {
-              console.log(`Duration capped: ${duration}s → ${cappedDuration}s`);
+              // console.log(`Duration capped: ${duration}s → ${cappedDuration}s`);
             }
-            console.log(`Successfully detected audio duration: ${cappedDuration}s`);
+            // console.log(`Successfully detected audio duration: ${cappedDuration}s`);
             resolve(cappedDuration);
           } else {
             console.error('Invalid duration output from ffprobe:', output);
@@ -187,7 +187,7 @@ function estimateAudioDuration(textOrBufferSize: string | number): number {
     const cappedDuration = Math.min(averageDuration, MAX_VOICE_DURATION_SECONDS);
     const finalDuration = Math.max(cappedDuration, MIN_VOICE_DURATION_SECONDS);
     
-    console.log(`Duration estimation: ${words} words, ${characters} chars → ${finalDuration.toFixed(1)}s`);
+    // console.log(`Duration estimation: ${words} words, ${characters} chars → ${finalDuration.toFixed(1)}s`);
     return finalDuration;
   } else {
     // Rough estimate based on buffer size (for MP3, approximately 1 minute = 1MB at 128kbps)
@@ -198,7 +198,7 @@ function estimateAudioDuration(textOrBufferSize: string | number): number {
     const cappedDuration = Math.min(estimatedDuration, MAX_VOICE_DURATION_SECONDS);
     const finalDuration = Math.max(cappedDuration, MIN_VOICE_DURATION_SECONDS);
     
-    console.log(`Buffer size estimation: ${sizeInMB.toFixed(2)}MB → ${finalDuration.toFixed(1)}s`);
+    // console.log(`Buffer size estimation: ${sizeInMB.toFixed(2)}MB → ${finalDuration.toFixed(1)}s`);
     return finalDuration;
   }
 }
@@ -281,7 +281,7 @@ function convertCharacterTimestampsToWords(
     });
   }
   
-  console.log(`Converted ${characterTimestamps.length} character timestamps to ${words.length} word timestamps`);
+  // console.log(`Converted ${characterTimestamps.length} character timestamps to ${words.length} word timestamps`);
   return words;
 }
 
@@ -296,10 +296,10 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
       maxDurationSeconds = 300;
     }
     
-    console.log('Generating voice with Eleven Labs (with timing data)...');
-    console.log(`Text length: ${text.length} characters`);
-    console.log(`Word count: ${text.trim().split(/\s+/).length} words`);
-    console.log(`Max duration: ${maxDurationSeconds}s`);
+    // console.log('Generating voice with Eleven Labs (with timing data)...');
+    // console.log(`Text length: ${text.length} characters`);
+    // console.log(`Word count: ${text.trim().split(/\s+/).length} words`);
+    // console.log(`Max duration: ${maxDurationSeconds}s`);
     
     // Validate text length
     const validation = validateTextForVoice(text, maxDurationSeconds);
@@ -326,13 +326,13 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
         const matchedCharacter = getVoiceCharacterFromBackgroundVideo(backgroundVideoFromOptions);
         if (matchedCharacter) {
           effectiveCharacter = matchedCharacter;
-          console.log(`Match celeb selected: Using voice character "${effectiveCharacter}" for background video "${backgroundVideoFromOptions}"`);
+          // console.log(`Match celeb selected: Using voice character "${effectiveCharacter}" for background video "${backgroundVideoFromOptions}"`);
         } else {
-          console.log(`Match celeb selected but no matching voice found for background video "${backgroundVideoFromOptions}", falling back to storyteller`);
+          // console.log(`Match celeb selected but no matching voice found for background video "${backgroundVideoFromOptions}", falling back to storyteller`);
           effectiveCharacter = 'storyteller';
         }
       } else {
-        console.log('Match celeb selected but no background video provided, falling back to storyteller');
+        // console.log('Match celeb selected but no background video provided, falling back to storyteller');
         effectiveCharacter = 'storyteller';
       }
     }
@@ -341,8 +341,8 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
     const voiceId = getVoiceIdFromCharacter(effectiveCharacter);
     
     // Make API call to ElevenLabs with timing data
-    console.log('Calling ElevenLabs with-timestamps endpoint...');
-    console.log(`Using voice ID: ${voiceId} for character: ${effectiveCharacter || 'storyteller'}`);
+    // console.log('Calling ElevenLabs with-timestamps endpoint...');
+    // console.log(`Using voice ID: ${voiceId} for character: ${effectiveCharacter || 'storyteller'}`);
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps`, {
       method: 'POST',
       headers: {
@@ -366,7 +366,7 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
       throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText}: ${errorText}`);
     }
 
-    console.log('Voice generation with timing successful, processing response...');
+    // console.log('Voice generation with timing successful, processing response...');
     const responseData = await response.json();
     
     // Extract audio and timing data
@@ -379,14 +379,14 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
     
     // Convert base64 audio to buffer
     const audioBuffer = Buffer.from(audioBase64, 'base64');
-    console.log('Audio buffer size:', audioBuffer.length, 'bytes');
+    // console.log('Audio buffer size:', audioBuffer.length, 'bytes');
     
     // Process character timestamps if available
     let characterTimestamps: CharacterTimestamp[] = [];
     let wordTimestamps: WordTimestamp[] = [];
     
     if (alignment && alignment.characters && alignment.character_start_times_seconds && alignment.character_end_times_seconds) {
-      console.log('Processing character-level timing data...');
+      // console.log('Processing character-level timing data...');
       
       const characters = alignment.characters;
       const startTimes = alignment.character_start_times_seconds;
@@ -401,32 +401,32 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
         });
       }
       
-      console.log(`Processed ${characterTimestamps.length} character timestamps`);
+      // console.log(`Processed ${characterTimestamps.length} character timestamps`);
       
       // Convert to word timestamps
       wordTimestamps = convertCharacterTimestampsToWords(text, characterTimestamps);
-      console.log(`Generated ${wordTimestamps.length} word timestamps`);
+      // console.log(`Generated ${wordTimestamps.length} word timestamps`);
       
       // Log sample word timestamps
-      console.log('Sample word timestamps:');
+      // console.log('Sample word timestamps:');
       wordTimestamps.slice(0, 10).forEach((wt, i) => {
-        console.log(`  ${i + 1}. "${wt.word}" [${wt.startTime.toFixed(2)}s - ${wt.endTime.toFixed(2)}s]`);
+        // console.log(`  ${i + 1}. "${wt.word}" [${wt.startTime.toFixed(2)}s - ${wt.endTime.toFixed(2)}s]`);
       });
     } else {
       console.warn('No timing data received from ElevenLabs, timing features will be limited');
     }
     
     // Get actual audio duration
-    console.log('Getting actual audio duration...');
+    // console.log('Getting actual audio duration...');
     try {
       const actualDuration = await getActualAudioDuration(audioBuffer);
-      console.log(`Voice generation completed:`);
-      console.log(`  - Word count: ${finalWordCount}`);
-      console.log(`  - Estimated duration: ${estimatedDuration.toFixed(1)}s`);
-      console.log(`  - Actual duration: ${actualDuration.toFixed(1)}s`);
-      console.log(`  - Duration accuracy: ${((actualDuration / estimatedDuration) * 100).toFixed(1)}%`);
-      console.log(`  - Character timestamps: ${characterTimestamps.length}`);
-      console.log(`  - Word timestamps: ${wordTimestamps.length}`);
+      // console.log(`Voice generation completed:`);
+      // console.log(`  - Word count: ${finalWordCount}`);
+      // console.log(`  - Estimated duration: ${estimatedDuration.toFixed(1)}s`);
+      // console.log(`  - Actual duration: ${actualDuration.toFixed(1)}s`);
+      // console.log(`  - Duration accuracy: ${((actualDuration / estimatedDuration) * 100).toFixed(1)}%`);
+      // console.log(`  - Character timestamps: ${characterTimestamps.length}`);
+      // console.log(`  - Word timestamps: ${wordTimestamps.length}`);
       
       return {
         audioBuffer,
@@ -440,7 +440,7 @@ export async function generateVoice(options: VoiceGenerationOptions): Promise<Vo
     } catch (durationError) {
       console.error('Failed to get actual duration, using estimation:', durationError);
       const fallbackDuration = estimatedDuration; // Use full estimated duration
-      console.log(`Using estimated duration: ${fallbackDuration.toFixed(1)}s`);
+      // console.log(`Using estimated duration: ${fallbackDuration.toFixed(1)}s`);
       
       return {
         audioBuffer,
@@ -467,7 +467,7 @@ export async function saveVoiceToFile(audioBuffer: Buffer, filename: string): Pr
     const outputPath = path.join(outputDir, filename);
     await fs.writeFile(outputPath, audioBuffer);
     const publicUrl = `/generated-videos/${filename}`;
-    console.log('Voice saved locally:', publicUrl);
+    // console.log('Voice saved locally:', publicUrl);
     return { publicUrl, filePath: outputPath };
   } catch (error) {
     console.error('Error saving voice file:', error);

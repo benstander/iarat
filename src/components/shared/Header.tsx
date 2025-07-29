@@ -53,17 +53,17 @@ export default function Header() {
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded-md transition-colors"
+                className="flex items-center gap-2 px-2 py-2 hover:bg-gray-50 rounded-md transition-colors"
               >
-                <div className="w-12 h-12 bg-black rounded-md flex items-center justify-center hover:bg-gray-600">
-                  <User className="w-4 h-4 text-white" />
+                <div className="w-12 h-12 bg-white border-black border-2 rounded-md flex items-center justify-center hover:bg-gray-50">
+                  <User className="w-4 h-4 text-black" />
                 </div>
               </button>
               
               {showUserMenu && (
                 <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   {/* User Email */}
-                  <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-100 mb-2">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 mb-2">
                       <User className="w-4 h-4 text-gray-900" />
                       <div className="text-sm font-regular text-gray-900">{user.email}
                       </div>

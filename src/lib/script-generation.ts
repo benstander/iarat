@@ -229,8 +229,8 @@ TIMING REMINDER: Aim for around ${recommendedWords} words, but prioritize educat
   const actualWordCount = words.length;
   const estimatedDuration = actualWordCount / ELEVENLABS_SPEAKING_RATE.WORDS_PER_SECOND;
   
-  console.log(`Generated script: ${actualWordCount} words`);
-  console.log(`Estimated duration: ~${estimatedDuration.toFixed(1)}s`);
+  // console.log(`Generated script: ${actualWordCount} words`);
+  // console.log(`Estimated duration: ~${estimatedDuration.toFixed(1)}s`);
   
   if (estimatedDuration > 60) {
     console.warn(`Script may exceed 60 seconds (estimated ${estimatedDuration.toFixed(1)}s), but proceeding without trimming`);

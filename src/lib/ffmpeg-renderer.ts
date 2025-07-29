@@ -212,7 +212,7 @@ export class FFmpegVideoRenderer {
         return [];
       }
       
-      console.log(`Generating captions from ${wordTimestamps.length} ElevenLabs word timestamps`);
+      // console.log(`Generating captions from ${wordTimestamps.length} ElevenLabs word timestamps`);
       
       // Create one caption chunk per word using exact ElevenLabs timing
       const chunks: CaptionChunk[] = [];
@@ -228,10 +228,10 @@ export class FFmpegVideoRenderer {
       }
       
       // Debug logging
-      console.log(`Generated ${chunks.length} caption chunks from ElevenLabs word timestamps (one word per caption):`);
+      // (`Generated ${chunks.length} caption chunks from ElevenLabs word timestamps (one word per caption):`);
       chunks.slice(0, 10).forEach((chunk, index) => {
         const duration = chunk.endTime - chunk.startTime;
-        console.log(`  ${index + 1}. [${chunk.startTime.toFixed(2)}s - ${chunk.endTime.toFixed(2)}s] (${duration.toFixed(2)}s) "${chunk.text}"`);
+        // console.log(`  ${index + 1}. [${chunk.startTime.toFixed(2)}s - ${chunk.endTime.toFixed(2)}s] (${duration.toFixed(2)}s) "${chunk.text}"`);
       });
       if (chunks.length > 10) {
         console.log(`  ... and ${chunks.length - 10} more words`);
@@ -272,7 +272,7 @@ export class FFmpegVideoRenderer {
     const effectiveDuration = durationInSeconds * NATURAL_PAUSE_FACTOR;
     const baseSecondsPerWord = effectiveDuration / totalWords;
     
-    console.log(`Caption timing: ${totalWords} words, ${durationInSeconds}s total, ${baseSecondsPerWord.toFixed(2)}s per word`);
+    //console.log(`Caption timing: ${totalWords} words, ${durationInSeconds}s total, ${baseSecondsPerWord.toFixed(2)}s per word`);
     
     // Create intelligent word chunks based on natural language patterns
     const chunks: CaptionChunk[] = [];
@@ -334,7 +334,7 @@ export class FFmpegVideoRenderer {
     }
     
     // Debug logging
-    console.log(`Generated ${chunks.length} caption chunks with intelligent grouping (no overlap):`);
+    //console.log(`Generated ${chunks.length} caption chunks with intelligent grouping (no overlap):`);
     chunks.forEach((chunk, index) => {
       console.log(`  ${index + 1}. [${chunk.startTime.toFixed(2)}s - ${chunk.endTime.toFixed(2)}s] (${(chunk.endTime - chunk.startTime).toFixed(2)}s) "${chunk.text}"`);
     });
@@ -342,7 +342,7 @@ export class FFmpegVideoRenderer {
     // Log timing statistics
     const totalCaptionTime = chunks.reduce((sum, chunk) => sum + (chunk.endTime - chunk.startTime), 0);
     const averageDuration = totalCaptionTime / chunks.length;
-    console.log(`Caption stats: avg duration ${averageDuration.toFixed(2)}s, total time ${totalCaptionTime.toFixed(2)}s`);
+    // console.log(`Caption stats: avg duration ${averageDuration.toFixed(2)}s, total time ${totalCaptionTime.toFixed(2)}s`);
     
     return chunks;
   }
@@ -492,8 +492,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     const assContent = assHeader + assEvents + '\n';
 
     await fs.writeFile(outputPath, assContent, 'utf8');
-    console.log(`Created ASS subtitle file with ${captions.length} captions at: ${outputPath}`);
-    console.log(`Caption styling: font=${styling.font}, size=${styling.size}, position=${styling.alignment}, margin=${styling.marginV}`);
+    // console.log(`Created ASS subtitle file with ${captions.length} captions at: ${outputPath}`);
+    // console.log(`Caption styling: font=${styling.font}, size=${styling.size}, position=${styling.alignment}, margin=${styling.marginV}`);
     return outputPath;
   }
 
@@ -521,7 +521,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     }).join('\n');
 
     await fs.writeFile(outputPath, srtContent, 'utf8');
-    console.log(`Created SRT subtitle file with ${captions.length} captions at: ${outputPath}`);
+    // console.log(`Created SRT subtitle file with ${captions.length} captions at: ${outputPath}`);
     return outputPath;
   }
 
@@ -543,16 +543,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   static async renderVideo(options: FFmpegVideoOptions): Promise<void> {
     const { script, backgroundVideo, voiceAudio, audioDurationInSeconds, outputPath, wordTimestamps, captionOptions } = options;
     
-    console.log('Starting FFmpeg video render with optimized settings...');
-    console.log('Options:', { 
-      script: script.substring(0, 100) + '...', 
-      backgroundVideo: this.isUrl(backgroundVideo) ? 'URL' : backgroundVideo,
-      voiceAudio: this.isUrl(voiceAudio) ? 'URL' : voiceAudio,
-      audioDurationInSeconds 
-    });
+    // console.log('Starting FFmpeg video render with optimized settings...');
+    // console.log('Options:', { 
+    //   script: script.substring(0, 100) + '...', 
+    //   backgroundVideo: this.isUrl(backgroundVideo) ? 'URL' : backgroundVideo,
+    //   voiceAudio: this.isUrl(voiceAudio) ? 'URL' : voiceAudio,
+    //   audioDurationInSeconds 
+    // });
 
     // Debug caption options
-    console.log('Caption options received:', wordTimestamps);
+    // console.log('Caption options received:', wordTimestamps);
 
     // Handle background video - download if it's a URL
     let localBackgroundVideo = backgroundVideo;
@@ -560,10 +560,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     
     if (this.isUrl(backgroundVideo)) {
       tempBackgroundVideo = path.join(path.dirname(outputPath), `temp_bg_${Date.now()}.mp4`);
-      console.log('Downloading background video from URL...');
+      // console.log('Downloading background video from URL...');
       await this.downloadFile(backgroundVideo, tempBackgroundVideo);
       localBackgroundVideo = tempBackgroundVideo;
-      console.log('Background video downloaded successfully');
+      // console.log('Background video downloaded successfully');
     }
 
     // Handle voice audio - download if it's a URL
@@ -572,10 +572,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     
     if (this.isUrl(voiceAudio)) {
       tempVoiceAudio = path.join(path.dirname(outputPath), `temp_voice_${Date.now()}.mp3`);
-      console.log('Downloading voice audio from URL...');
+      // console.log('Downloading voice audio from URL...');
       await this.downloadFile(voiceAudio, tempVoiceAudio);
       localVoiceAudio = tempVoiceAudio;
-      console.log('Voice audio downloaded successfully');
+      // console.log('Voice audio downloaded successfully');
     }
 
     // Generate captions with priority: ElevenLabs timestamps > Audio transcription > Script estimation
@@ -583,10 +583,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     
     if (wordTimestamps && wordTimestamps.length > 0) {
       // Use precise ElevenLabs word timestamps (best option)
-      console.log('Using ElevenLabs word timestamps for caption generation...');
+      // console.log('Using ElevenLabs word timestamps for caption generation...');
       try {
         captions = this.generateCaptionsFromElevenLabsTimestamps(wordTimestamps);
-        console.log(`Generated ${captions.length} caption chunks from ElevenLabs word timestamps`);
+        // console.log(`Generated ${captions.length} caption chunks from ElevenLabs word timestamps`);
       } catch (error) {
         console.warn('Failed to generate captions from ElevenLabs timestamps, falling back:', error);
         captions = [];
@@ -597,11 +597,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     const assPath = path.join(path.dirname(outputPath), `subtitles_${Date.now()}.ass`);
     await this.createAssSubtitleFile(captions, assPath, captionOptions);
 
-    console.log('Using ASS subtitles (centered)');
-    console.log(`ASS path: ${assPath}`);
+    // console.log('Using ASS subtitles (centered)');
+    // console.log(`ASS path: ${assPath}`);
 
     // Always ignore background video audio - only use voice audio
-    console.log('Background video audio will be ignored - using only voice audio');
+    // console.log('Background video audio will be ignored - using only voice audio');
 
     // Build filter complex - always use only voice audio
     const filterComplex = `
@@ -645,7 +645,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       outputPath
     ];
 
-    console.log('FFmpeg command:', ['ffmpeg', ...ffmpegArgs].join(' '));
+    // console.log('FFmpeg command:', ['ffmpeg', ...ffmpegArgs].join(' '));
 
     return new Promise((resolve, reject) => {
       const ffmpegProcess = spawn('ffmpeg', ffmpegArgs, {
@@ -699,28 +699,28 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
    * Test caption generation with timing analysis
    */
   static testCaptionGeneration(script: string, duration: number): void {
-    console.log('\n=== Testing Caption Generation ===');
-    console.log('Script:', script);
-    console.log('Duration:', duration, 'seconds');
-    console.log('Words:', script.split(/\s+/).length);
+    // console.log('\n=== Testing Caption Generation ===');
+    // console.log('Script:', script);
+    // console.log('Duration:', duration, 'seconds');
+    // console.log('Words:', script.split(/\s+/).length);
     
     const captions = this.generateCaptions(script, duration);
-    console.log('\nGenerated captions with improved timing:');
+    // console.log('\nGenerated captions with improved timing:');
     
     captions.forEach((caption, index) => {
       const wordCount = caption.text.split(' ').length;
       const chunkDuration = caption.endTime - caption.startTime;
       const timing = `${caption.startTime.toFixed(2)}s - ${caption.endTime.toFixed(2)}s`;
-      console.log(`${index + 1}. [${timing}] (${chunkDuration.toFixed(2)}s, ${wordCount} words) "${caption.text}"`);
+      // console.log(`${index + 1}. [${timing}] (${chunkDuration.toFixed(2)}s, ${wordCount} words) "${caption.text}"`);
     });
     
-    // Timing analysis
+    // Timing analysis  
     const totalCaptionTime = captions.reduce((sum, caption) => sum + (caption.endTime - caption.startTime), 0);
     const coverage = (totalCaptionTime / duration) * 100;
-    console.log(`\nTiming Analysis:`);
-    console.log(`- Total caption time: ${totalCaptionTime.toFixed(2)}s`);
-    console.log(`- Coverage: ${coverage.toFixed(1)}% of video duration`);
-    console.log(`- Average caption duration: ${(totalCaptionTime / captions.length).toFixed(2)}s`);
+    // console.log(`\nTiming Analysis:`);
+    // console.log(`- Total caption time: ${totalCaptionTime.toFixed(2)}s`);
+    // console.log(`- Coverage: ${coverage.toFixed(1)}% of video duration`);
+    // console.log(`- Average caption duration: ${(totalCaptionTime / captions.length).toFixed(2)}s`);
     
     // Check for gaps or overlaps
     let gaps = 0;
@@ -734,7 +734,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         overlaps++;
       }
     }
-    console.log(`- Gaps between captions: ${gaps}`);
-    console.log(`- Overlapping captions: ${overlaps}`);
+    // console.log(`- Gaps between captions: ${gaps}`);
+    // console.log(`- Overlapping captions: ${overlaps}`);
   }
 }
